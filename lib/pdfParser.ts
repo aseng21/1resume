@@ -7,14 +7,43 @@ interface ParsedPDFContent {
 
 export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): Promise<ParsedPDFContent> {
   try {
-    // Convert PDF to text
-    const rawText = await pdfToText(pdfBlob);
+    // Validate input
+    if (!pdfBlob) {
+      throw new Error('No PDF blob provided');
+    }
+
+    // Check blob size and type
+    console.log('PDF Blob Size:', pdfBlob.size);
+    console.log('PDF Blob Type:', pdfBlob.type);
+
+    if (pdfBlob.size === 0) {
+      throw new Error('Empty PDF file');
+    }
+
+    // Convert PDF to text with additional error handling
+    let rawText: string;
+    try {
+      rawText = await pdfToText(pdfBlob);
+    } catch (extractError) {
+      console.error('PDF Text Extraction Error:', extractError);
+      throw new Error(`Failed to extract text from PDF: ${extractError instanceof Error ? extractError.message : 'Unknown extraction error'}`);
+    }
+
+    // Validate extracted text
+    if (!rawText || typeof rawText !== 'string') {
+      throw new Error('No text extracted from PDF');
+    }
     
     // Split into meaningful lines, removing empty lines
     const lines = rawText
       .split('\n')
       .map(line => line.trim())
       .filter(line => line.length > 0);
+
+    // Validate lines
+    if (lines.length === 0) {
+      throw new Error('No non-empty lines found in PDF');
+    }
 
     const parsedContent = {
       rawText,
