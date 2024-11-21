@@ -12,7 +12,7 @@ export async function storePDF(file: File): Promise<string> {
     const cache = await caches.open('pdf-storage');
     const uid = uuidv4();
     const timestamp = Date.now();
-    const filename = `${uid}-${timestamp}-${file.name}`;
+    const filename = `${file.name}-${uid}-${timestamp}.pdf`;
     
     const pdfResponse = new Response(file, {
       headers: {
