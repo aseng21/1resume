@@ -1,88 +1,32 @@
 import pdfToText from 'react-pdftotext';
-import { v4 as uuidv4 } from 'uuid';
-
-async function extractText(file: Blob): Promise<string> {
-  try {
-    const text = await pdfToText(file);
-    return text;
-  } catch (error) {
-    console.error("Failed to extract text from pdf", error);
-    throw error;
-  }
-}
-
-interface PersonalInfo {
-  name: string;
-  email: string;
-  phone: string;
-  location: string;
-  linkedin?: string;
-  website?: string;
-  summary?: string;
-}
-
-interface WorkExperience {
-  company: string;
-  position: string;
-  duration: string;
-  startDate?: string;
-  endDate?: string;
-  responsibilities: string[];
-  achievements: string[];
-}
-
-interface Education {
-  institution: string;
-  degree: string;
-  field: string;
-  graduationDate?: string;
-  gpa?: string;
-  achievements?: string[];
-}
-
-interface Certification {
-  name: string;
-  issuer: string;
-  date?: string;
-  expiryDate?: string;
-}
 
 interface ParsedPDFContent {
-  personalInfo: PersonalInfo;
-  workExperience: WorkExperience[];
-  education: Education[];
-  skills: string[];
-  certifications: Certification[];
-  languages?: string[];
-  projects?: Array<{
-    name: string;
-    description: string;
-    technologies: string[];
-  }>;
+  rawText: string;
+  lines: string[];
 }
 
 export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): Promise<ParsedPDFContent> {
   try {
-    // Extract UUID from filename (format: originalname-uuid-timestamp.pdf)
-    const parts = originalFilename.split('-');
-    if (parts.length < 2) {
-      throw new Error('Invalid filename format');
-    }
-    const uuid = parts[parts.length - 2]; // Get the UUID part
+    // Convert PDF to text
+    const rawText = await pdfToText(pdfBlob);
     
-    // Convert blob to text using our extractText function
-    const fullText = await extractText(pdfBlob);
-    
-    const parsedContent: ParsedPDFContent = {
-      personalInfo: extractPersonalInfo(fullText),
-      workExperience: extractWorkExperience(fullText),
-      education: extractEducation(fullText),
-      skills: extractSkills(fullText),
-      certifications: extractCertifications(fullText)
+    // Split into meaningful lines, removing empty lines
+    const lines = rawText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    const parsedContent = {
+      rawText,
+      lines
     };
 
-    // Cache parsed content
-    await cacheParseResults(uuid, parsedContent);
+    // Cache the results
+    const parts = originalFilename.split('-');
+    if (parts.length >= 2) {
+      const uuid = parts[parts.length - 2];
+      await cacheParseResults(uuid, parsedContent);
+    }
 
     return parsedContent;
   } catch (error) {
@@ -328,14 +272,7 @@ async function cacheParseResults(uuid: string, content: ParsedPDFContent): Promi
     const timestamp = Date.now();
     const filename = `parsed-${uuid}-${timestamp}.txt`;
     
-    // Create a formatted text representation of parsed content
-    const formattedContent = `Personal Info:\n${content.personalInfo}\n\n` +
-      `Work Experience:\n${content.workExperience.join('\n')}\n\n` +
-      `Education:\n${content.education.join('\n')}\n\n` +
-      `Skills:\n${content.skills.join('\n')}\n\n` +
-      `Certifications:\n${content.certifications.join('\n')}`;
-
-    const response = new Response(formattedContent, {
+    const response = new Response(content.rawText, {
       headers: { 
         'Content-Type': 'text/plain',
         'Content-Disposition': `attachment; filename="${filename}"`,
