@@ -1,7 +1,8 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { v4 as uuidv4 } from 'uuid';
+import worker from 'pdfjs-dist/build/pdf.worker.entry';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = worker;
 
 interface ParsedPDFContent {
   personalInfo: string;
@@ -20,8 +21,18 @@ export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): 
     }
     const uuid = parts[parts.length - 2]; // Get the UUID part
     
-    // Load PDF
-    const pdf = await pdfjsLib.getDocument(await pdfBlob.arrayBuffer()).promise;
+    // Convert blob to ArrayBuffer
+    const arrayBuffer = await pdfBlob.arrayBuffer();
+    
+    // Load PDF with explicit error handling
+    const loadingTask = pdfjsLib.getDocument({
+      data: arrayBuffer,
+      useWorkerFetch: false,
+      isEvalSupported: false,
+      useSystemFonts: true
+    });
+    
+    const pdf = await loadingTask.promise;
     
     // Extract text from all pages
     const textContent: string[] = [];
