@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut, Settings, ChevronLeft } from "lucide-react";
 import { listStoredPDFs, extractOriginalFilename } from '@/lib/pdfStorage';
 import { cn } from "@/lib/utils";
@@ -91,7 +90,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
         !isMobileSidebarOpen && "md:block"
       )}>
         {/* Header */}
-        <div className="flex flex-col flex-shrink-0">
+        <div className="flex flex-col h-full">
           <div className="h-14 flex items-center px-4 border-b border-gray-200 md:justify-between">
             <h2 className="text-lg font-semibold hidden md:block">1Resume</h2>
           </div>
@@ -100,15 +99,12 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
               className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
               onClick={onUploadClick}
             >
-              <Plus className="mr-2 h-4 w-4" />
-              New Resume
+              <Plus className="mr-2 h-4 w-4" /> Choose PDF File
             </Button>
           </div>
-        </div>
-        
-        {/* Resumes List */}
-        <ScrollArea className="flex-1 px-3 py-2 overflow-y-auto">
-          <div className="space-y-1">
+
+          {/* File List */}
+          <div className="flex-1 overflow-y-auto px-4">
             {storedFiles.length === 0 ? (
               <div className="px-2 py-8 text-center">
                 <FileText className="mx-auto h-8 w-8 text-gray-400 mb-2" />
@@ -123,80 +119,79 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
               storedFiles.map((file) => (
                 <div
                   key={file}
-                  onClick={() => onFileSelect(file)}
                   className={cn(
-                    "group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all",
-                    "hover:bg-gray-100",
-                    currentFile === file ? "bg-gray-100" : ""
+                    "group flex items-center w-full p-2 rounded-lg mb-2 relative pr-12",
+                    currentFile === file 
+                      ? "bg-gray-100" 
+                      : "hover:bg-gray-50"
                   )}
                 >
-                  <div className="flex items-center space-x-3 min-w-0">
-                    <FileText className={cn(
-                      "h-4 w-4 flex-shrink-0",
-                      currentFile === file ? "text-emerald-600" : "text-gray-400"
-                    )} />
-                    <span className={cn(
-                      "text-sm truncate",
-                      currentFile === file ? "text-emerald-600 font-medium" : "text-gray-600"
-                    )}>
+                  <div 
+                    className="flex-1 flex items-center cursor-pointer min-w-0"
+                    onClick={() => onFileSelect(file)}
+                  >
+                    <FileText className="h-4 w-4 mr-2 flex-shrink-0 text-gray-400" />
+                    <span className="truncate text-gray-700">
                       {extractOriginalFilename(file)}
                     </span>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => handleDelete(file, e)}
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(file, e);
+                    }}
+                    className="absolute right-2 flex items-center justify-center w-8 h-8 rounded-full hover:bg-red-100"
                   >
-                    <Trash2 className="h-4 w-4 text-gray-400 hover:text-red-600" />
-                  </Button>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </button>
                 </div>
               ))
             )}
           </div>
-        </ScrollArea>
 
-        {/* Footer */}
-        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
-          {user ? (
-            <div className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                    <span className="text-sm font-medium text-emerald-600">
-                      {user.email?.[0].toUpperCase() || 'U'}
-                    </span>
+          {/* Footer */}
+          <div className="mt-auto border-t border-gray-200 bg-white">
+            {user ? (
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                      <span className="text-sm font-medium text-emerald-600">
+                        {user.email?.[0].toUpperCase() || 'U'}
+                      </span>
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-sm font-medium text-gray-900 truncate">
+                        {user.displayName || user.email?.split('@')[0]}
+                      </span>
+                      <span className="text-xs text-gray-500 truncate">
+                        {user.email}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="text-sm font-medium text-gray-900 truncate">
-                      {user.displayName || user.email?.split('@')[0]}
-                    </span>
-                    <span className="text-xs text-gray-500 truncate">
-                      {user.email}
-                    </span>
-                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
                 </div>
+              </div>
+            ) : (
+              <div className="p-4">
                 <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                  onClick={handleSignOut}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => openAuthModal('signin')}
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Sign in
                 </Button>
               </div>
-            </div>
-          ) : (
-            <div className="p-4">
-              <Button
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => openAuthModal('signin')}
-              >
-                <LogIn className="mr-2 h-4 w-4" />
-                Sign in
-              </Button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
 
