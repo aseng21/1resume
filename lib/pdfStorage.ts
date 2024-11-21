@@ -1,6 +1,7 @@
 
 
 import { v4 as uuidv4 } from 'uuid';
+import { parsePDFContent } from './pdfParser';
 
 export async function storePDF(file: File): Promise<string> {
   try {
@@ -23,6 +24,16 @@ export async function storePDF(file: File): Promise<string> {
     });
 
     await cache.put(`/pdfs/${filename}`, pdfResponse.clone());
+
+    // Parse and cache PDF content
+    try {
+      const parsedContent = await parsePDFContent(file, filename);
+      // The parsePDFContent function already handles caching internally
+    } catch (parseError) {
+      console.error('Error parsing PDF:', parseError);
+      // Optionally, you could choose to not throw here, allowing PDF storage to continue
+    }
+
     return filename;
   } catch (error) {
     console.error('Error storing PDF:', error);
