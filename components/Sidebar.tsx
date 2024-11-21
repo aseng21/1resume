@@ -107,7 +107,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
         </div>
         
         {/* Resumes List */}
-        <ScrollArea className="flex-1 px-3 py-2">
+        <ScrollArea className="flex-1 px-3 py-2 overflow-y-auto">
           <div className="space-y-1">
             {storedFiles.length === 0 ? (
               <div className="px-2 py-8 text-center">
@@ -157,7 +157,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
         </ScrollArea>
 
         {/* Footer */}
-        <div className="flex-shrink-0 border-t border-gray-200">
+        <div className="absolute bottom-0 left-0 right-0 border-t border-gray-200 bg-white">
           {user ? (
             <div className="p-4">
               <div className="flex items-center justify-between">
