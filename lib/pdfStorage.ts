@@ -29,10 +29,20 @@ export async function storePDF(file: File): Promise<string> {
     // Parse and cache PDF content
     try {
       const parsedContent = await parsePDFContent(file, filename);
-      console.log('PDF parsed and cached:', filename); // Add logging for debugging
+      console.log('PDF parsed and cached:', filename);
+      // Log the parsed content structure (without sensitive data)
+      console.log('Parsed content sections:', {
+        hasPersonalInfo: !!parsedContent.personalInfo,
+        workExperienceCount: parsedContent.workExperience.length,
+        educationCount: parsedContent.education.length,
+        skillsCount: parsedContent.skills.length,
+        certificationsCount: parsedContent.certifications.length
+      });
     } catch (parseError) {
       console.error('Error parsing PDF:', parseError);
-      throw new Error('Failed to parse PDF content');
+      // Include original error details in the thrown error
+      const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown error';
+      throw new Error(`Failed to parse PDF content: ${errorMessage}`);
     }
 
     return filename;

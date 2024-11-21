@@ -13,8 +13,12 @@ interface ParsedPDFContent {
 
 export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): Promise<ParsedPDFContent> {
   try {
-    // Extract UUID from filename
-    const uuid = originalFilename.split('-')[1];
+    // Extract UUID from filename (format: originalname-uuid-timestamp.pdf)
+    const parts = originalFilename.split('-');
+    if (parts.length < 2) {
+      throw new Error('Invalid filename format');
+    }
+    const uuid = parts[parts.length - 2]; // Get the UUID part
     
     // Load PDF
     const pdf = await pdfjsLib.getDocument(await pdfBlob.arrayBuffer()).promise;
@@ -45,7 +49,13 @@ export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): 
     return parsedContent;
   } catch (error) {
     console.error('PDF Parsing Error:', error);
-    throw error;
+    // Log more details about the error
+    if (error instanceof Error) {
+      console.error('Error name:', error.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
+    throw new Error(`Failed to parse PDF: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
 }
 
@@ -117,7 +127,7 @@ async function cacheParseResults(uuid: string, content: ParsedPDFContent): Promi
 
 export async function retrieveParsedContent(uuid: string): Promise<ParsedPDFContent | null> {
   try {
-    const cache = await caches.open('pdf-parse-results');
+    const cache = await caches.open('pdf-storage');
     const keys = await cache.keys();
     
     // Find the most recent parsed file for this UUID
