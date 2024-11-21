@@ -48,6 +48,9 @@ export default function RootLayout({
           draggable
           pauseOnHover
           theme="light"
+          limit={3}
+          containerId="main-toast"
+          style={{ zIndex: 9999 }}
         />
       </body>
     </html>

@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { storePDF, loadPDF, deletePDF } from '@/lib/pdfStorage';
-import { ToastContainer, toast } from 'react-toastify';
+import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@/components/Sidebar';
 import { Upload } from 'lucide-react';
@@ -45,10 +45,16 @@ export default function Home() {
 
       const url = URL.createObjectURL(storedPDF);
       setCurrentPDF({ url, name: filename });
-      toast.success('Resume uploaded successfully');
+      toast.success('Resume uploaded successfully', {
+        toastId: 'resume-upload',
+        containerId: 'main-toast'
+      });
     } catch (error) {
       console.error('Error handling file:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload resume');
+      toast.error(error instanceof Error ? error.message : 'Failed to upload resume', {
+        toastId: 'resume-upload-error',
+        containerId: 'main-toast'
+      });
     }
   };
 
@@ -85,7 +91,10 @@ export default function Home() {
       setCurrentPDF({ url, name: filename });
     } catch (error) {
       console.error('Error loading stored PDF:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to load PDF');
+      toast.error(error instanceof Error ? error.message : 'Failed to load PDF', {
+        toastId: 'pdf-load-error',
+        containerId: 'main-toast'
+      });
     }
   };
 
@@ -105,21 +114,33 @@ export default function Home() {
         setAnalysisResult('');
       }
 
-      toast.success('Resume deleted successfully');
+      toast.success('Resume deleted successfully', {
+        toastId: 'resume-delete',
+        containerId: 'main-toast'
+      });
     } catch (error) {
       console.error('Error deleting PDF:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete PDF');
+      toast.error(error instanceof Error ? error.message : 'Failed to delete PDF', {
+        toastId: 'resume-delete-error',
+        containerId: 'main-toast'
+      });
     }
   };
 
   const handleAnalyze = async () => {
     if (!currentPDF) {
-      toast.error('Please upload a resume first');
+      toast.error('Please upload a resume first', {
+        toastId: 'analyze-error',
+        containerId: 'main-toast'
+      });
       return;
     }
 
     if (!jobDescription.trim()) {
-      toast.error('Please enter a job description');
+      toast.error('Please enter a job description', {
+        toastId: 'job-description-error',
+        containerId: 'main-toast'
+      });
       return;
     }
 
@@ -127,15 +148,28 @@ export default function Home() {
     try {
       // TODO: Implement LAMA model stuff
       setAnalysisResult('Analysis will be implemented soon...');
-      toast.success('Analysis completed');
+      toast.success('Analysis completed', {
+        toastId: 'analysis-success',
+        containerId: 'main-toast'
+      });
     } catch (error) {
-      toast.error('Failed to analyze resume');
+      toast.error('Failed to analyze resume', {
+        toastId: 'analysis-error',
+        containerId: 'main-toast'
+      });
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  const dropzoneProps = getRootProps();
+  const returnToUploadView = () => {
+    if (currentPDF?.url) {
+      URL.revokeObjectURL(currentPDF.url);
+    }
+    setCurrentPDF(null);
+    setJobDescription('');
+    setAnalysisResult('');
+  };
 
   return (
     <div className="flex h-screen bg-white">
@@ -143,7 +177,7 @@ export default function Home() {
         onFileSelect={handleStoredFileSelect}
         onDelete={handleDelete}
         currentFile={currentPDF?.name ?? null}
-        onUploadClick={() => document.getElementById('dropzone-input')?.click()}
+        onUploadClick={returnToUploadView}
       />
       
       <main className="flex-1 flex flex-col md:ml-80">
@@ -151,9 +185,9 @@ export default function Home() {
           <div className="flex-1 flex items-center justify-center p-4">
             <div className="w-96">
               <div
-                {...dropzoneProps}
+                {...getRootProps()}
                 className="cursor-pointer outline-none"
-                onClick={dropzoneProps.onClick}
+                onClick={getRootProps().onClick}
               >
                 <Card 
                   className={`p-8 border-2 border-dashed transition-colors ${
@@ -188,15 +222,13 @@ export default function Home() {
           <div className="flex-1 p-6 space-y-6 overflow-auto">
             <div className="flex items-center justify-between">
               <h1 className="text-2xl font-bold text-gray-900">Resume Analysis</h1>
-              <div {...getRootProps()}>
-                <input {...getInputProps()} />
-                <Button 
-                  variant="outline" 
-                  className="border-gray-200 text-emerald-700 hover:bg-emerald-50"
-                >
-                  Upload New Resume
-                </Button>
-              </div>
+              <Button 
+                variant="outline" 
+                className="border-gray-200 text-emerald-700 hover:bg-emerald-50"
+                onClick={returnToUploadView}
+              >
+                Upload New Resume
+              </Button>
             </div>
 
             <Card className="p-6 border-gray-200 bg-white">
@@ -228,7 +260,6 @@ export default function Home() {
           </div>
         )}
       </main>
-      <ToastContainer />
     </div>
   );
 }
