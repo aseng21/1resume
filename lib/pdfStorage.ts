@@ -1,5 +1,7 @@
 
 
+import { v4 as uuidv4 } from 'uuid';
+
 export async function storePDF(file: File): Promise<string> {
   try {
     // validation
@@ -8,7 +10,9 @@ export async function storePDF(file: File): Promise<string> {
     }
 
     const cache = await caches.open('pdf-storage');
-    const filename = `${Date.now()}-${file.name}`;
+    const uid = uuidv4();
+    const timestamp = Date.now();
+    const filename = `${uid}-${timestamp}-${file.name}`;
     
     const pdfResponse = new Response(file, {
       headers: {
