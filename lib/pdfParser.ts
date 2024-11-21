@@ -90,7 +90,7 @@ function extractCertifications(text: string): string[] {
 
 async function cacheParseResults(uuid: string, content: ParsedPDFContent): Promise<void> {
   try {
-    const cache = await caches.open('pdf-parse-results');
+    const cache = await caches.open('pdf-storage');
     const timestamp = Date.now();
     const filename = `parsed-${uuid}-${timestamp}.txt`;
     
@@ -109,7 +109,7 @@ async function cacheParseResults(uuid: string, content: ParsedPDFContent): Promi
       }
     });
 
-    await cache.put(`/parsed-pdfs/${filename}`, response);
+    await cache.put(`/parsed/${filename}`, response);
   } catch (error) {
     console.error('Error caching parse results:', error);
   }
@@ -122,7 +122,7 @@ export async function retrieveParsedContent(uuid: string): Promise<ParsedPDFCont
     
     // Find the most recent parsed file for this UUID
     const matchingFiles = keys
-      .filter(key => key.url.includes(`parsed-${uuid}-`))
+      .filter(key => key.url.includes(`/parsed/`) && key.url.includes(`-${uuid}-`))
       .sort((a, b) => {
         const extractTimestamp = (url: string) => {
           const match = url.match(/-(\d+)\.txt$/);

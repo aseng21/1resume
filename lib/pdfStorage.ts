@@ -23,15 +23,16 @@ export async function storePDF(file: File): Promise<string> {
       },
     });
 
+    // Store the PDF file
     await cache.put(`/pdfs/${filename}`, pdfResponse.clone());
 
     // Parse and cache PDF content
     try {
       const parsedContent = await parsePDFContent(file, filename);
-      // The parsePDFContent function already handles caching internally
+      console.log('PDF parsed and cached:', filename); // Add logging for debugging
     } catch (parseError) {
       console.error('Error parsing PDF:', parseError);
-      // Optionally, you could choose to not throw here, allowing PDF storage to continue
+      throw new Error('Failed to parse PDF content');
     }
 
     return filename;
@@ -90,4 +91,15 @@ export async function listStoredPDFs(): Promise<string[]> {
 
 export function extractOriginalFilename(storedFilename: string): string {
   return storedFilename.split('-')[0];
+}
+
+export async function checkParsedContent(filename: string): Promise<boolean> {
+  try {
+    const cache = await caches.open('pdf-storage');
+    const parsedResponse = await cache.match(`/parsed/${filename}`);
+    return parsedResponse !== undefined;
+  } catch (error) {
+    console.error('Error checking parsed content:', error);
+    return false;
+  }
 }
