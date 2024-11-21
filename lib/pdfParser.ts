@@ -1,12 +1,6 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { v4 as uuidv4 } from 'uuid';
 
-// Set up PDF.js worker
-if (typeof window !== 'undefined') {
-  const pdfjsWorker = require('pdfjs-dist/build/pdf.worker.min.js');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
-}
-
 interface ParsedPDFContent {
   personalInfo: string;
   workExperience: string[];
@@ -27,27 +21,20 @@ export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): 
     // Convert blob to ArrayBuffer
     const arrayBuffer = await pdfBlob.arrayBuffer();
     
-    // Load PDF with explicit error handling
-    const loadingTask = pdfjsLib.getDocument({
-      data: arrayBuffer,
-      useWorkerFetch: false,
-      isEvalSupported: false,
-      useSystemFonts: true
-    });
-    
-    const pdf = await loadingTask.promise;
+    // Load and parse PDF directly
+    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+    let fullText = '';
     
     // Extract text from all pages
-    const textContent: string[] = [];
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
-      const pageTextContent = await page.getTextContent();
-      const pageText = pageTextContent.items.map(item => 'str' in item ? item.str : '').join(' ');
-      textContent.push(pageText);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .filter(item => 'str' in item)
+        .map(item => (item as { str: string }).str)
+        .join(' ');
+      fullText += pageText + '\n';
     }
-    
-    // Basic parsing (can be enhanced with more sophisticated logic)
-    const fullText = textContent.join('\n');
     
     const parsedContent: ParsedPDFContent = {
       personalInfo: extractPersonalInfo(fullText),
