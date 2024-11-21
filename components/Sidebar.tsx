@@ -139,7 +139,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
                       "text-sm truncate",
                       currentFile === file ? "text-emerald-600 font-medium" : "text-gray-600"
                     )}>
-                      extractOriginalFilename(file)
+                      {extractOriginalFilename(file)}
                     </span>
                   </div>
                   <Button
