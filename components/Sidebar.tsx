@@ -192,6 +192,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
         mode={authMode}
+        onModeChange={setAuthMode}
       />
     </>
   );
