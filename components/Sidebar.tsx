@@ -139,7 +139,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
                       "text-sm truncate",
                       currentFile === file ? "text-emerald-600 font-medium" : "text-gray-600"
                     )}>
-                      {file.split('-').pop()}
+                      file.split('-')[0]
                     </span>
                   </div>
                   <Button
