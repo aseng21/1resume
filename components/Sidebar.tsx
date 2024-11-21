@@ -3,9 +3,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, FileText, Plus, Menu, LogIn, UserPlus } from "lucide-react";
+import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut } from "lucide-react";
 import { listStoredPDFs } from '@/lib/pdfStorage';
 import { cn } from "@/lib/utils";
+import { auth } from '@/lib/firebase';
+import { User } from 'firebase/auth';
+import AuthModal from './AuthModal';
 
 interface SidebarProps {
   onFileSelect: (file: string) => void;
@@ -17,11 +20,20 @@ interface SidebarProps {
 export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadClick }: SidebarProps) {
   const [storedFiles, setStoredFiles] = useState<string[]>([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false); // will be connected to firebase l8r
+  const [user, setUser] = useState<User | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
 
   useEffect(() => {
     loadStoredFiles();
   }, [currentFile]);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setUser(user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const loadStoredFiles = async () => {
     try {
@@ -36,6 +48,19 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
     e.stopPropagation();
     await onDelete(file);
     await loadStoredFiles();
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await auth.signOut();
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
+  };
+
+  const openAuthModal = (mode: 'signin' | 'signup') => {
+    setAuthMode(mode);
+    setShowAuthModal(true);
   };
 
   return (
@@ -116,24 +141,28 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
 
         {/* Auth Section */}
         <div className="p-4 border-t border-gray-200">
-          {isLoggedIn ? (
+          {user ? (
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <span className="text-sm font-medium text-emerald-600">JD</span>
+                  <span className="text-sm font-medium text-emerald-600">
+                    {user.email?.[0].toUpperCase() || 'U'}
+                  </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-900">John Doe</span>
-                  <span className="text-xs text-gray-500">john@example.com</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {user.displayName || user.email?.split('@')[0]}
+                  </span>
+                  <span className="text-xs text-gray-500">{user.email}</span>
                 </div>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
                 className="text-gray-600 hover:text-gray-900"
-                onClick={() => setIsLoggedIn(false)} // Will be replaced with Firebase logout
+                onClick={handleSignOut}
               >
-                Sign out
+                <LogOut className="h-4 w-4" />
               </Button>
             </div>
           ) : (
@@ -141,7 +170,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
               <Button
                 variant="outline"
                 className="w-full border-emerald-600 text-emerald-600 hover:bg-emerald-50"
-                onClick={() => setIsLoggedIn(true)} // replaced with Firebase login
+                onClick={() => openAuthModal('signin')}
               >
                 <LogIn className="mr-2 h-4 w-4" />
                 Sign in
@@ -149,7 +178,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
               <Button
                 variant="ghost"
                 className="w-full text-gray-600 hover:bg-gray-50"
-                onClick={() => setIsLoggedIn(true)} // replaced with Firebase signup
+                onClick={() => openAuthModal('signup')}
               >
                 <UserPlus className="mr-2 h-4 w-4" />
                 Create account
@@ -158,6 +187,12 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
           )}
         </div>
       </div>
+
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        mode={authMode}
+      />
     </>
   );
 }
