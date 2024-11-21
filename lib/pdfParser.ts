@@ -3,8 +3,10 @@ import { v4 as uuidv4 } from 'uuid';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined') {
-  const workerSrc = require('pdfjs-dist/build/pdf.worker.min.js');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
 }
 
 interface ParsedPDFContent {
