@@ -160,58 +160,40 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
         <div className="flex-shrink-0 border-t border-gray-200">
           {user ? (
             <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-full bg-emerald-100 flex items-center justify-center">
                     <span className="text-sm font-medium text-emerald-600">
                       {user.email?.[0].toUpperCase() || 'U'}
                     </span>
                   </div>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium text-gray-900">
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-sm font-medium text-gray-900 truncate">
                       {user.displayName || user.email?.split('@')[0]}
                     </span>
-                    <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                    <span className="text-xs text-gray-500 truncate">
                       {user.email}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center space-x-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
-                    onClick={handleSignOut}
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-gray-500 hover:text-gray-700"
+                  onClick={handleSignOut}
+                >
+                  <LogOut className="h-4 w-4" />
+                </Button>
               </div>
             </div>
           ) : (
-            <div className="p-4 space-y-2">
+            <div className="p-4">
               <Button
-                variant="outline"
-                className="w-full justify-start border-gray-200 hover:bg-gray-100 hover:text-gray-900"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
                 onClick={() => openAuthModal('signin')}
               >
                 <LogIn className="mr-2 h-4 w-4" />
                 Sign in
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-gray-600 hover:bg-gray-100 hover:text-gray-900"
-                onClick={() => openAuthModal('signup')}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Create account
               </Button>
             </div>
           )}
