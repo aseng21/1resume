@@ -91,13 +91,25 @@ function extractCertifications(text: string): string[] {
 async function cacheParseResults(uuid: string, content: ParsedPDFContent): Promise<void> {
   try {
     const cache = await caches.open('pdf-parse-results');
-    const cacheKey = `/parsed-pdfs/${uuid}.json`;
+    const timestamp = Date.now();
+    const filename = `parsed-${uuid}-${timestamp}.txt`;
     
-    const response = new Response(JSON.stringify(content), {
-      headers: { 'Content-Type': 'application/json' }
+    // Create a formatted text representation of parsed content
+    const formattedContent = `Personal Info:\n${content.personalInfo}\n\n` +
+      `Work Experience:\n${content.workExperience.join('\n')}\n\n` +
+      `Education:\n${content.education.join('\n')}\n\n` +
+      `Skills:\n${content.skills.join('\n')}\n\n` +
+      `Certifications:\n${content.certifications.join('\n')}`;
+
+    const response = new Response(formattedContent, {
+      headers: { 
+        'Content-Type': 'text/plain',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-cache'
+      }
     });
 
-    await cache.put(cacheKey, response);
+    await cache.put(`/parsed-pdfs/${filename}`, response);
   } catch (error) {
     console.error('Error caching parse results:', error);
   }
@@ -106,11 +118,34 @@ async function cacheParseResults(uuid: string, content: ParsedPDFContent): Promi
 export async function retrieveParsedContent(uuid: string): Promise<ParsedPDFContent | null> {
   try {
     const cache = await caches.open('pdf-parse-results');
-    const response = await cache.match(`/parsed-pdfs/${uuid}.json`);
+    const keys = await cache.keys();
     
+    // Find the most recent parsed file for this UUID
+    const matchingFiles = keys
+      .filter(key => key.url.includes(`parsed-${uuid}-`))
+      .sort((a, b) => {
+        const extractTimestamp = (url: string) => {
+          const match = url.match(/-(\d+)\.txt$/);
+          return match ? parseInt(match[1], 10) : 0;
+        };
+        return extractTimestamp(b.url) - extractTimestamp(a.url);
+      });
+
+    if (matchingFiles.length === 0) return null;
+
+    const response = await cache.match(matchingFiles[0]);
     if (!response) return null;
+
+    const text = await response.text();
+    const sections = text.split('\n\n');
     
-    return await response.json();
+    return {
+      personalInfo: sections[0].replace('Personal Info:\n', '').trim(),
+      workExperience: sections[1].replace('Work Experience:\n', '').trim().split('\n'),
+      education: sections[2].replace('Education:\n', '').trim().split('\n'),
+      skills: sections[3].replace('Skills:\n', '').trim().split('\n'),
+      certifications: sections[4].replace('Certifications:\n', '').trim().split('\n')
+    };
   } catch (error) {
     console.error('Error retrieving parsed content:', error);
     return null;
