@@ -4,7 +4,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { auth, googleProvider } from '@/lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup,
+  sendPasswordResetEmail,
+  sendEmailVerification
+} from 'firebase/auth';
 import { FcGoogle } from 'react-icons/fc';
 import { toast } from 'react-toastify';
 import { Loader2 } from 'lucide-react';
@@ -12,36 +18,147 @@ import { Loader2 } from 'lucide-react';
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
-  mode: 'signin' | 'signup';
-  onModeChange: (mode: 'signin' | 'signup') => void;
+  mode: 'signin' | 'signup' | 'reset';
+  onModeChange: (mode: 'signin' | 'signup' | 'reset') => void;
 }
 
 export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [currentMode, setCurrentMode] = useState(mode);
+  const [passwordStrength, setPasswordStrength] = useState<{score: number; feedback: string}>({ score: 0, feedback: '' });
 
-  // Update currentMode when prop changes
   if (mode !== currentMode) {
     setCurrentMode(mode);
+    setPassword('');
+    setConfirmPassword('');
+    setPasswordStrength({ score: 0, feedback: '' });
   }
+
+  const validatePassword = (pass: string) => {
+    const hasNumber = /\d/.test(pass);
+    const hasUpper = /[A-Z]/.test(pass);
+    const hasLower = /[a-z]/.test(pass);
+    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(pass);
+    const isLongEnough = pass.length >= 8;
+
+    let score = 0;
+    let feedback = [];
+
+    if (hasNumber) score++;
+    if (hasUpper) score++;
+    if (hasLower) score++;
+    if (hasSpecial) score++;
+    if (isLongEnough) score++;
+
+    if (!hasNumber) feedback.push("Add numbers");
+    if (!hasUpper) feedback.push("Add uppercase letters");
+    if (!hasLower) feedback.push("Add lowercase letters");
+    if (!hasSpecial) feedback.push("Add special characters");
+    if (!isLongEnough) feedback.push("Make it at least 8 characters long");
+
+    return {
+      score,
+      feedback: feedback.join(", ")
+    };
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newPassword = e.target.value;
+    setPassword(newPassword);
+    if (currentMode === 'signup') {
+      setPasswordStrength(validatePassword(newPassword));
+    }
+  };
 
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      toast.error('Please fill in all fields');
+    if (!email) {
+      toast.error('Please enter your email address', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
       return;
+    }
+
+    if (currentMode === 'reset') {
+      setIsLoading(true);
+      try {
+        await sendPasswordResetEmail(auth, email);
+        toast.success('Password reset email sent! Please check your inbox.', {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        onClose();
+      } catch (error: any) {
+        const errorMessage = error.message || 'An error occurred';
+        toast.error(
+          errorMessage.includes('auth/user-not-found')
+            ? 'No account found with this email address'
+            : 'Failed to send reset email. Please try again.',
+          {
+            position: "top-right",
+            autoClose: 5000,
+          }
+        );
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    if (!password) {
+      toast.error('Please enter your password', {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    if (currentMode === 'signup') {
+      if (password !== confirmPassword) {
+        toast.error('Passwords do not match', {
+          position: "top-right",
+          autoClose: 3000,
+        });
+        return;
+      }
+      if (passwordStrength.score < 3) {
+        toast.error('Please use a stronger password: ' + passwordStrength.feedback, {
+          position: "top-right",
+          autoClose: 5000,
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
     try {
       if (currentMode === 'signup') {
-        await createUserWithEmailAndPassword(auth, email, password);
-        toast.success('Account created successfully! Welcome to 1Resume.');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        await sendEmailVerification(userCredential.user);
+        toast.success('Account created! Please check your email for verification.', {
+          position: "top-right",
+          autoClose: 5000,
+        });
       } else {
         await signInWithEmailAndPassword(auth, email, password);
-        toast.success('Welcome back to 1Resume!');
+        if (!auth.currentUser?.emailVerified) {
+          toast.warning('Please verify your email address', {
+            position: "top-right",
+            autoClose: 5000,
+          });
+        } else {
+          toast.success('Welcome back to 1Resume!', {
+            position: "top-right",
+            autoClose: 3000,
+          });
+        }
       }
       onClose();
     } catch (error: any) {
@@ -51,112 +168,161 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
         : errorMessage.includes('auth/wrong-password')
         ? 'Incorrect password. Please try again.'
         : errorMessage.includes('auth/user-not-found')
-        ? 'No account found with this email. Please sign up first.'
+        ? 'No account found with this email address'
         : errorMessage.includes('auth/invalid-email')
-        ? 'Please enter a valid email address.'
+        ? 'Please enter a valid email address'
         : errorMessage.includes('auth/weak-password')
-        ? 'Password should be at least 6 characters long.'
+        ? 'Please use a stronger password'
         : 'Authentication failed. Please try again.';
-      
-      toast.error(friendlyMessage);
-    } finally {
-      setIsLoading(false);
+      toast.error(friendlyMessage, {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
+    setIsLoading(false);
   };
 
   const handleGoogleAuth = async () => {
     setIsLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      toast.success('Welcome to 1Resume!');
+      toast.success('Welcome to 1Resume!', {
+        position: "top-right",
+        autoClose: 3000,
+      });
       onClose();
-    } catch (error: any) {
-      toast.error('Google sign-in failed. Please try again.');
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      toast.error('Google sign-in failed. Please try again.', {
+        position: "top-right",
+        autoClose: 5000,
+      });
     }
-  };
-
-  const switchMode = () => {
-    const newMode = currentMode === 'signin' ? 'signup' : 'signin';
-    setCurrentMode(newMode);
-    onModeChange(newMode);
-    setEmail('');
-    setPassword('');
+    setIsLoading(false);
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px] p-6">
-        <DialogHeader className="space-y-3">
+        <DialogHeader className="mb-4">
           <DialogTitle className="text-2xl font-bold text-center">
-            {currentMode === 'signin' ? 'Welcome Back!' : 'Create Account'}
+            {currentMode === 'signin' ? 'Welcome Back!' : currentMode === 'signup' ? 'Create Account' : 'Reset Password'}
           </DialogTitle>
-          <DialogDescription className="text-center text-gray-500">
+          <DialogDescription className="text-center">
             {currentMode === 'signin' 
               ? 'Sign in to access your resume analysis tools.'
-              : 'Join 1Resume to start optimizing your job applications.'}
+              : currentMode === 'signup' 
+              ? 'Join 1Resume to start optimizing your job applications.'
+              : 'Enter your email to receive password reset instructions.'}
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-6">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full h-11 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            onClick={handleGoogleAuth}
-            disabled={isLoading}
-          >
-            <FcGoogle className="mr-2 h-5 w-5" />
-            <span className="text-sm font-medium">Continue with Google</span>
-            {isLoading && <Loader2 className="ml-2 h-4 w-4 animate-spin" />}
-          </Button>
-        </div>
+        {currentMode !== 'reset' && (
+          <>
+            <Button
+              variant="outline"
+              onClick={handleGoogleAuth}
+              disabled={isLoading}
+              className="w-full"
+            >
+              {isLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <FcGoogle className="mr-2 h-4 w-4" />
+              )}
+              Continue with Google
+            </Button>
 
-        <div className="relative my-4">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-200"></div>
-          </div>
-          <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-gray-500">or</span>
-          </div>
-        </div>
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with email
+                </span>
+              </div>
+            </div>
+          </>
+        )}
 
         <form onSubmit={handleEmailAuth} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-sm font-medium text-gray-700">
-              Email
-            </Label>
+            <Label htmlFor="email">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="h-11 px-4 border-gray-300 focus:ring-emerald-500 focus:border-emerald-500"
-              required
               disabled={isLoading}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
-              Password
-            </Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="h-11 px-4 border-gray-300 focus:ring-emerald-500 focus:border-emerald-500"
-              required
-              disabled={isLoading}
-            />
-          </div>
+
+          {currentMode !== 'reset' && (
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={handlePasswordChange}
+                disabled={isLoading}
+              />
+              {currentMode === 'signup' && password && (
+                <div className="mt-2 space-y-1">
+                  <div className="h-1 w-full bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        passwordStrength.score === 5
+                          ? 'bg-emerald-600'
+                          : passwordStrength.score >= 3
+                          ? 'bg-emerald-400'
+                          : 'bg-emerald-200'
+                      }`}
+                      style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                    />
+                  </div>
+                  <p className={`text-xs ${
+                    passwordStrength.score === 5
+                      ? 'text-emerald-600'
+                      : passwordStrength.score >= 3
+                      ? 'text-emerald-500'
+                      : 'text-emerald-400'
+                  }`}>
+                    {passwordStrength.feedback || (passwordStrength.score === 5 ? 'Strong password!' : '')}
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {currentMode === 'signup' && (
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={isLoading}
+              />
+              {password && confirmPassword && password !== confirmPassword && (
+                <p className="text-xs text-red-500">Passwords do not match</p>
+              )}
+            </div>
+          )}
+
           <Button
             type="submit"
-            className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white transition-colors"
-            disabled={isLoading}
+            variant="default"
+            className="w-full bg-emerald-600 hover:bg-emerald-700"
+            disabled={isLoading || (currentMode === 'signup' && (
+              !email || 
+              !password || 
+              !confirmPassword || 
+              password !== confirmPassword || 
+              passwordStrength.score < 3
+            ))}
           >
             {isLoading ? (
               <div className="flex items-center justify-center">
@@ -164,27 +330,51 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
                 <span>Please wait...</span>
               </div>
             ) : (
-              <span>{currentMode === 'signin' ? 'Sign In' : 'Create Account'}</span>
+              <span>
+                {currentMode === 'signin' 
+                  ? 'Sign In' 
+                  : currentMode === 'signup' 
+                  ? 'Create Account' 
+                  : 'Send Reset Link'}
+              </span>
             )}
           </Button>
         </form>
 
-        <div className="mt-4 text-center text-sm text-gray-500">
+        <div className="text-center text-sm">
           {currentMode === 'signin' ? (
-            <p>
-              Don't have an account?{' '}
+            <>
               <button
-                onClick={switchMode}
+                onClick={() => onModeChange('reset')}
+                className="text-emerald-600 hover:text-emerald-700 font-medium block w-full mb-2"
+              >
+                Forgot password?
+              </button>
+              <p>
+                Don't have an account?{' '}
+                <button
+                  onClick={() => onModeChange('signup')}
+                  className="text-emerald-600 hover:text-emerald-700 font-medium"
+                >
+                  Sign up
+                </button>
+              </p>
+            </>
+          ) : currentMode === 'signup' ? (
+            <p>
+              Already have an account?{' '}
+              <button
+                onClick={() => onModeChange('signin')}
                 className="text-emerald-600 hover:text-emerald-700 font-medium"
               >
-                Sign up
+                Sign in
               </button>
             </p>
           ) : (
             <p>
-              Already have an account?{' '}
+              Remember your password?{' '}
               <button
-                onClick={switchMode}
+                onClick={() => onModeChange('signin')}
                 className="text-emerald-600 hover:text-emerald-700 font-medium"
               >
                 Sign in

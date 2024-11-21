@@ -22,7 +22,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
 
   useEffect(() => {
     loadStoredFiles();
@@ -58,7 +58,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
     }
   };
 
-  const openAuthModal = (mode: 'signin' | 'signup') => {
+  const openAuthModal = (mode: 'signin' | 'signup' | 'reset') => {
     setAuthMode(mode);
     setShowAuthModal(true);
   };
