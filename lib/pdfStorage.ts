@@ -76,3 +76,8 @@ export async function listStoredPDFs(): Promise<string[]> {
     return [];
   }
 }
+
+export function extractOriginalFilename(storedFilename: string): string {
+  const parts = storedFilename.split('-');
+  return parts.slice(0, -2).join('-');
+}
