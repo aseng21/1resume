@@ -11,6 +11,7 @@ import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@/components/Sidebar';
 import { Upload } from 'lucide-react';
+import AnalysisLoading from '@/components/AnalysisLoading';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
@@ -251,7 +252,9 @@ export default function Home() {
               </Button>
             </Card>
 
-            {analysisResult && (
+            {isAnalyzing ? (
+              <AnalysisLoading />
+            ) : analysisResult && (
               <Card className="p-6 border-gray-200 bg-white">
                 <h2 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
                 <div className="whitespace-pre-wrap text-gray-800">{analysisResult}</div>
