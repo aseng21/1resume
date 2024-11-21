@@ -23,17 +23,29 @@ export default function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
     e.preventDefault();
     setIsLoading(true);
     try {
-      if (mode === 'signin') {
-        await signInWithEmailAndPassword(auth, email, password);
-        toast.success('Signed in successfully');
-      } else {
+      if (mode === 'signup') {
         await createUserWithEmailAndPassword(auth, email, password);
-        toast.success('Account created successfully');
+        toast.success('Account created successfully! Welcome to 1Resume.');
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+        toast.success('Welcome back to 1Resume!');
       }
       onClose();
-    } catch (error) {
-      console.error('Auth error:', error);
-      toast.error(error instanceof Error ? error.message : 'Authentication failed');
+    } catch (error: any) {
+      const errorMessage = error.message || 'An error occurred';
+      const friendlyMessage = errorMessage.includes('auth/email-already-in-use')
+        ? 'This email is already registered. Please try signing in instead.'
+        : errorMessage.includes('auth/wrong-password')
+        ? 'Incorrect password. Please try again.'
+        : errorMessage.includes('auth/user-not-found')
+        ? 'No account found with this email. Please sign up first.'
+        : errorMessage.includes('auth/invalid-email')
+        ? 'Please enter a valid email address.'
+        : errorMessage.includes('auth/weak-password')
+        ? 'Password should be at least 6 characters long.'
+        : 'Authentication failed. Please try again.';
+      
+      toast.error(friendlyMessage);
     } finally {
       setIsLoading(false);
     }
@@ -43,11 +55,10 @@ export default function AuthModal({ isOpen, onClose, mode }: AuthModalProps) {
     setIsLoading(true);
     try {
       await signInWithPopup(auth, googleProvider);
-      toast.success('Signed in with Google successfully');
+      toast.success('Welcome to 1Resume!');
       onClose();
-    } catch (error) {
-      console.error('Google auth error:', error);
-      toast.error(error instanceof Error ? error.message : 'Google authentication failed');
+    } catch (error: any) {
+      toast.error('Google sign-in failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
