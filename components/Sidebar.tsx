@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut } from "lucide-react";
+import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut, Settings, ChevronLeft } from "lucide-react";
 import { listStoredPDFs } from '@/lib/pdfStorage';
 import { cn } from "@/lib/utils";
 import { auth } from '@/lib/firebase';
@@ -66,51 +66,68 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
   return (
     <>
       {/* Mobile menu button */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute top-4 left-4 md:hidden z-50"
-        onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-      >
-        <Menu className="h-6 w-6" />
-      </Button>
+      <div className="fixed top-0 left-0 right-0 z-50 flex items-center h-14 px-4 border-b bg-white md:hidden">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          className="mr-2"
+        >
+          {isMobileSidebarOpen ? (
+            <ChevronLeft className="h-5 w-5" />
+          ) : (
+            <Menu className="h-5 w-5" />
+          )}
+        </Button>
+        <h1 className="text-lg font-semibold">1Resume</h1>
+      </div>
 
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-80 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0",
         isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "flex flex-col h-full"
+        "flex flex-col h-full",
+        "md:top-0",
+        !isMobileSidebarOpen && "md:block"
       )}>
         {/* Header */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">1Resume</h2>
+        <div className="flex flex-col flex-shrink-0">
+          <div className="h-14 flex items-center px-4 border-b border-gray-200 md:justify-between">
+            <h2 className="text-lg font-semibold hidden md:block">1Resume</h2>
           </div>
-          <Button 
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-            onClick={onUploadClick}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            New Resume
-          </Button>
+          <div className="p-4">
+            <Button 
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+              onClick={onUploadClick}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              New Resume
+            </Button>
+          </div>
         </div>
         
         {/* Resumes List */}
-        <ScrollArea className="flex-1 px-2 py-4">
+        <ScrollArea className="flex-1 px-3 py-2">
           <div className="space-y-1">
             {storedFiles.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">
-                No resumes stored yet
-              </p>
+              <div className="px-2 py-8 text-center">
+                <FileText className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                <p className="text-sm text-gray-500">
+                  No resumes yet
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Upload your first resume to get started
+                </p>
+              </div>
             ) : (
               storedFiles.map((file) => (
                 <div
                   key={file}
                   onClick={() => onFileSelect(file)}
                   className={cn(
-                    "group flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all",
-                    "hover:bg-emerald-50",
-                    currentFile === file ? "bg-emerald-50 border-emerald-200" : ""
+                    "group flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer transition-all",
+                    "hover:bg-gray-100",
+                    currentFile === file ? "bg-gray-100" : ""
                   )}
                 >
                   <div className="flex items-center space-x-3 min-w-0">
@@ -139,37 +156,50 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
           </div>
         </ScrollArea>
 
-        {/* Auth Section */}
-        <div className="p-4 border-t border-gray-200">
+        {/* Footer */}
+        <div className="flex-shrink-0 border-t border-gray-200">
           {user ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-                  <span className="text-sm font-medium text-emerald-600">
-                    {user.email?.[0].toUpperCase() || 'U'}
-                  </span>
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
+                    <span className="text-sm font-medium text-emerald-600">
+                      {user.email?.[0].toUpperCase() || 'U'}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium text-gray-900">
+                      {user.displayName || user.email?.split('@')[0]}
+                    </span>
+                    <span className="text-xs text-gray-500 truncate max-w-[180px]">
+                      {user.email}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium text-gray-900">
-                    {user.displayName || user.email?.split('@')[0]}
-                  </span>
-                  <span className="text-xs text-gray-500">{user.email}</span>
+                <div className="flex items-center space-x-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-gray-500 hover:text-gray-700"
+                    onClick={handleSignOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-gray-600 hover:text-gray-900"
-                onClick={handleSignOut}
-              >
-                <LogOut className="h-4 w-4" />
-              </Button>
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="p-4 space-y-2">
               <Button
                 variant="outline"
-                className="w-full border-emerald-600 text-emerald-600 hover:bg-emerald-50"
+                className="w-full justify-start border-gray-200 hover:bg-gray-100 hover:text-gray-900"
                 onClick={() => openAuthModal('signin')}
               >
                 <LogIn className="mr-2 h-4 w-4" />
@@ -177,7 +207,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
               </Button>
               <Button
                 variant="ghost"
-                className="w-full text-gray-600 hover:bg-gray-50"
+                className="w-full justify-start text-gray-600 hover:bg-gray-100 hover:text-gray-900"
                 onClick={() => openAuthModal('signup')}
               >
                 <UserPlus className="mr-2 h-4 w-4" />
