@@ -1,13 +1,10 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { v4 as uuidv4 } from 'uuid';
+import { PDFWorker } from 'pdfjs-dist/types/src/display/worker_options';
 
 // Configure PDF.js worker
 if (typeof window !== 'undefined') {
-  const pdfjsWorker = new URL(
-    'pdfjs-dist/build/pdf.worker.min.js',
-    import.meta.url
-  );
-  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.toString();
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 }
 
 interface ParsedPDFContent {
