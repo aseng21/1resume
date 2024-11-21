@@ -1,4 +1,4 @@
-import { extractText } from 'react-pdftotext';
+import pdfToText from 'react-pdftotext';
 import { v4 as uuidv4 } from 'uuid';
 
 interface ParsedPDFContent {
@@ -19,7 +19,7 @@ export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): 
     const uuid = parts[parts.length - 2]; // Get the UUID part
     
     // Convert blob to text using react-pdftotext
-    const fullText = await extractText(pdfBlob);
+    const fullText = await pdfToText(pdfBlob);
     
     const parsedContent: ParsedPDFContent = {
       personalInfo: extractPersonalInfo(fullText),
