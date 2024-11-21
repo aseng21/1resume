@@ -30,13 +30,10 @@ export async function storePDF(file: File): Promise<string> {
     try {
       const parsedContent = await parsePDFContent(file, filename);
       console.log('PDF parsed and cached:', filename);
-      // Log the parsed content structure (without sensitive data)
-      console.log('Parsed content sections:', {
-        hasPersonalInfo: !!parsedContent.personalInfo,
-        workExperienceCount: parsedContent.workExperience.length,
-        educationCount: parsedContent.education.length,
-        skillsCount: parsedContent.skills.length,
-        certificationsCount: parsedContent.certifications.length
+      // Log the parsed content structure
+      console.log('Parsed content:', {
+        rawTextLength: parsedContent.rawText.length,
+        linesCount: parsedContent.lines.length
       });
     } catch (parseError) {
       console.error('Error parsing PDF:', parseError);
