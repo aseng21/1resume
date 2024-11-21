@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,7 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
     const isLongEnough = pass.length >= 8;
 
     let score = 0;
-    let feedback = [];
+    const feedback: string[] = [];
 
     if (hasNumber) score++;
     if (hasUpper) score++;
@@ -96,8 +96,8 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
           autoClose: 5000,
         });
         onClose();
-      } catch (error: any) {
-        const errorMessage = error.message || 'An error occurred';
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'An error occurred';
         toast.error(
           errorMessage.includes('auth/user-not-found')
             ? 'No account found with this email address'
@@ -161,8 +161,8 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
         }
       }
       onClose();
-    } catch (error: any) {
-      const errorMessage = error.message || 'An error occurred';
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An error occurred';
       const friendlyMessage = errorMessage.includes('auth/email-already-in-use')
         ? 'This email is already registered. Please try signing in instead.'
         : errorMessage.includes('auth/wrong-password')
@@ -191,7 +191,7 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
         autoClose: 3000,
       });
       onClose();
-    } catch (error) {
+    } catch (error: unknown) {
       toast.error('Google sign-in failed. Please try again.', {
         position: "top-right",
         autoClose: 5000,
@@ -351,7 +351,7 @@ export default function AuthModal({ isOpen, onClose, mode, onModeChange }: AuthM
                 Forgot password?
               </button>
               <p>
-                Don't have an account?{' '}
+                Don&apos;t have an account?{' '}
                 <button
                   onClick={() => onModeChange('signup')}
                   className="text-emerald-600 hover:text-emerald-700 font-medium"

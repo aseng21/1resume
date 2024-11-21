@@ -27,7 +27,10 @@ export default function Home() {
     };
   }, [currentPDF]);
 
-  const processFile = async (file: File) => {
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
+
+    const file = acceptedFiles[0];
     try {
       if (file.type !== 'application/pdf') {
         throw new Error('Please upload a PDF file');
@@ -57,13 +60,7 @@ export default function Home() {
         containerId: 'main-toast'
       });
     }
-  };
-
-  const onDrop = useCallback(async (acceptedFiles: File[]) => {
-    if (acceptedFiles.length > 0) {
-      await processFile(acceptedFiles[0]);
-    }
-  }, []);
+  }, [currentPDF]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -153,7 +150,7 @@ export default function Home() {
         toastId: 'analysis-success',
         containerId: 'main-toast'
       });
-    } catch (error) {
+    } catch {
       toast.error('Failed to analyze resume', {
         toastId: 'analysis-error',
         containerId: 'main-toast'

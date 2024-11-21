@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut, Settings, ChevronLeft } from "lucide-react";
+import { Trash2, FileText, Plus, Menu, LogIn, LogOut, ChevronLeft } from "lucide-react";
 import { listStoredPDFs } from '@/lib/pdfStorage';
 import { cn } from "@/lib/utils";
 import { auth } from '@/lib/firebase';
