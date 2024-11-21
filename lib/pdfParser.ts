@@ -1,10 +1,5 @@
-import * as pdfjsLib from 'pdfjs-dist';
+import { extractText } from 'react-pdftotext';
 import { v4 as uuidv4 } from 'uuid';
-
-// Configure PDF.js worker
-if (typeof window !== 'undefined') {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-}
 
 interface ParsedPDFContent {
   personalInfo: string;
@@ -23,23 +18,8 @@ export async function parsePDFContent(pdfBlob: Blob, originalFilename: string): 
     }
     const uuid = parts[parts.length - 2]; // Get the UUID part
     
-    // Convert blob to ArrayBuffer
-    const arrayBuffer = await pdfBlob.arrayBuffer();
-    
-    // Load and parse PDF directly
-    const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
-    let fullText = '';
-    
-    // Extract text from all pages
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .filter(item => 'str' in item)
-        .map(item => (item as { str: string }).str)
-        .join(' ');
-      fullText += pageText + '\n';
-    }
+    // Convert blob to text using react-pdftotext
+    const fullText = await extractText(pdfBlob);
     
     const parsedContent: ParsedPDFContent = {
       personalInfo: extractPersonalInfo(fullText),
