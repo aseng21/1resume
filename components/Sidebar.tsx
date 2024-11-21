@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Trash2, FileText, Plus, Menu, LogIn, LogOut, ChevronLeft } from "lucide-react";
-import { listStoredPDFs } from '@/lib/pdfStorage';
+import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut, Settings, ChevronLeft } from "lucide-react";
+import { listStoredPDFs, extractOriginalFilename } from '@/lib/pdfStorage';
 import { cn } from "@/lib/utils";
 import { auth } from '@/lib/firebase';
 import { User } from 'firebase/auth';
@@ -139,7 +139,7 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
                       "text-sm truncate",
                       currentFile === file ? "text-emerald-600 font-medium" : "text-gray-600"
                     )}>
-                      {file.split('-').pop()}
+                      {extractOriginalFilename(file)}
                     </span>
                   </div>
                   <Button

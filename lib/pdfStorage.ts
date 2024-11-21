@@ -1,5 +1,8 @@
 
 
+import { v4 as uuidv4 } from 'uuid';
+import { parsePDFContent } from './pdfParser';
+
 export async function storePDF(file: File): Promise<string> {
   try {
     // validation
@@ -8,7 +11,9 @@ export async function storePDF(file: File): Promise<string> {
     }
 
     const cache = await caches.open('pdf-storage');
-    const filename = `${Date.now()}-${file.name}`;
+    const uid = uuidv4();
+    const timestamp = Date.now();
+    const filename = `${file.name}-${uid}-${timestamp}.pdf`;
     
     const pdfResponse = new Response(file, {
       headers: {
@@ -18,7 +23,25 @@ export async function storePDF(file: File): Promise<string> {
       },
     });
 
+    // Store the PDF file
     await cache.put(`/pdfs/${filename}`, pdfResponse.clone());
+
+    // Parse and cache PDF content
+    try {
+      const parsedContent = await parsePDFContent(file, filename);
+      console.log('PDF parsed and cached:', filename);
+      // Log the parsed content structure
+      console.log('Parsed content:', {
+        rawTextLength: parsedContent.rawText.length,
+        linesCount: parsedContent.lines.length
+      });
+    } catch (parseError) {
+      console.error('Error parsing PDF:', parseError);
+      // Include original error details in the thrown error
+      const errorMessage = parseError instanceof Error ? parseError.message : 'Unknown error';
+      throw new Error(`Failed to parse PDF content: ${errorMessage}`);
+    }
+
     return filename;
   } catch (error) {
     console.error('Error storing PDF:', error);
@@ -70,5 +93,20 @@ export async function listStoredPDFs(): Promise<string[]> {
   } catch (error) {
     console.error('Error listing PDFs:', error);
     return [];
+  }
+}
+
+export function extractOriginalFilename(storedFilename: string): string {
+  return storedFilename.split('-')[0];
+}
+
+export async function checkParsedContent(filename: string): Promise<boolean> {
+  try {
+    const cache = await caches.open('pdf-storage');
+    const parsedResponse = await cache.match(`/parsed/${filename}`);
+    return parsedResponse !== undefined;
+  } catch (error) {
+    console.error('Error checking parsed content:', error);
+    return false;
   }
 }
