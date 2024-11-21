@@ -1,6 +1,15 @@
 import * as pdfjsLib from 'pdfjs-dist';
 import { v4 as uuidv4 } from 'uuid';
 
+// Configure PDF.js worker
+if (typeof window !== 'undefined') {
+  const pdfjsWorker = new URL(
+    'pdfjs-dist/build/pdf.worker.min.js',
+    import.meta.url
+  );
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.toString();
+}
+
 interface ParsedPDFContent {
   personalInfo: string;
   workExperience: string[];
