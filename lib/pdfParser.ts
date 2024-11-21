@@ -145,13 +145,13 @@ function extractPersonalInfo(text: string): PersonalInfo {
 function extractWorkExperience(text: string): WorkExperience[] {
   const experiences: WorkExperience[] = [];
   
-  // Find work experience section
-  const workSection = text.match(/(?:EXPERIENCE|WORK EXPERIENCE|EMPLOYMENT).*?\n([\s\S]+?)(?=\n(?:EDUCATION|SKILLS|CERTIFICATIONS|$))/i);
+  // Find work experience section using more specific patterns
+  const workSection = text.match(/(?:WORK\s+HISTORY|EXPERIENCE|WORK\s+EXPERIENCE|EMPLOYMENT).*?\n([\s\S]+?)(?=\n(?:EDUCATION|SKILLS|CERTIFICATIONS|$))/i);
   
   if (!workSection) return experiences;
 
-  // Split into individual roles
-  const roles = workSection[1].split(/(?=\n[A-Z][^a-z\n]{2,})/);
+  // Split into individual roles - improved pattern to match date-based entries
+  const roles = workSection[1].split(/(?=\d{2}\/\d{4}|(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{4})/i);
   
   for (const role of roles) {
     if (!role.trim()) continue;
@@ -166,11 +166,11 @@ function extractWorkExperience(text: string): WorkExperience[] {
       achievements: []
     };
 
-    // Extract company and position
-    const headerMatch = role.match(/^(.*?)\n(.*?)\n/);
-    if (headerMatch) {
-      experience.company = headerMatch[1].trim();
-      experience.position = headerMatch[2].trim();
+    // Extract position and company with improved pattern
+    const positionCompanyMatch = role.match(/(?:\d{2}\/\d{4}.*?\n)?(.*?)\n(.*?)(?:\s*[–-]\s*|\n)/);
+    if (positionCompanyMatch) {
+      experience.position = positionCompanyMatch[1].trim();
+      experience.company = positionCompanyMatch[2].replace(/—.*$/, '').trim();
     }
 
     // Extract dates
@@ -257,17 +257,69 @@ function extractEducation(text: string): Education[] {
 }
 
 function extractSkills(text: string): string[] {
-  // Basic skills extraction
-  const skillsRegex = /(?:Skills?|Expertise):\s*(.+?)(?:\n|$)/gi;
-  const matches = text.matchAll(skillsRegex);
-  return Array.from(matches).map(match => match[1]).slice(0, 10);
+  const skillsSections = [
+    /SKILLS?:?\s*((?:[•\-\*]\s*[^\n]+\n?)+)/i,
+    /TECHNICAL\s+SKILLS?:?\s*((?:[•\-\*]\s*[^\n]+\n?)+)/i,
+    /(?:SKILLS?|EXPERTISE)(?:\s*&\s*COMPETENCIES)?:?\s*((?:[^•\n]*(?:\n|$))+)/i
+  ];
+
+  for (const regex of skillsSections) {
+    const skillsMatch = text.match(regex);
+    if (skillsMatch) {
+      // Handle both bullet points and comma-separated lists
+      const skillsText = skillsMatch[1];
+      if (skillsText.includes('•') || skillsText.includes('-') || skillsText.includes('*')) {
+        return skillsText
+          .match(/[•\-\*]\s*([^\n]+)/g)
+          ?.map(skill => skill.replace(/^[•\-\*]\s*/, '').trim()) || [];
+      } else {
+        return skillsText
+          .split(/[,\n]/)
+          .map(skill => skill.trim())
+          .filter(skill => skill.length > 0);
+      }
+    }
+  }
+
+  return [];
 }
 
-function extractCertifications(text: string): string[] {
-  // Basic certifications extraction
-  const certRegex = /(?:Certification|Certificate):\s*(.+?)(?:\n|$)/gi;
-  const matches = text.matchAll(certRegex);
-  return Array.from(matches).map(match => match[1]).slice(0, 5);
+function extractCertifications(text: string): Certification[] {
+  const certifications: Certification[] = [];
+  
+  const certSection = text.match(/CERTIFICATIONS?.*?\n([\s\S]+?)(?=\n(?:EDUCATION|SKILLS|EXPERIENCE|$))/i);
+  
+  if (!certSection) return certifications;
+
+  const certLines = certSection[1].split('\n').filter(line => line.trim());
+  
+  for (const line of certLines) {
+    if (!line.trim() || line.trim().length < 3) continue;
+
+    const cert: Certification = {
+      name: '',
+      issuer: '',
+      date: '',
+      expiryDate: ''
+    };
+
+    // Extract certification with date pattern (PMP - 2023)
+    const certMatch = line.match(/([^(]+)(?:\s*\(([^)]+)\))?/);
+    if (certMatch) {
+      cert.name = certMatch[1].trim();
+      if (certMatch[2]) {
+        // Handle different date formats
+        const dateMatch = certMatch[2].match(/(\d{4})/);
+        if (dateMatch) {
+          cert.date = dateMatch[1];
+        }
+      }
+    }
+
+    certifications.push(cert);
+  }
+
+  return certifications;
 }
 
 async function cacheParseResults(uuid: string, content: ParsedPDFContent): Promise<void> {
