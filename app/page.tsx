@@ -1,101 +1,234 @@
-import Image from "next/image";
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { storePDF, loadPDF, deletePDF } from '@/lib/pdfStorage';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Sidebar from '@/components/Sidebar';
+import { Upload } from 'lucide-react';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
+  const [jobDescription, setJobDescription] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState('');
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
+  useEffect(() => {
+    return () => {
+      if (currentPDF?.url) {
+        URL.revokeObjectURL(currentPDF.url);
+      }
+    };
+  }, [currentPDF]);
+
+  const processFile = async (file: File) => {
+    try {
+      if (file.type !== 'application/pdf') {
+        throw new Error('Please upload a PDF file');
+      }
+
+      if (currentPDF?.url) {
+        URL.revokeObjectURL(currentPDF.url);
+      }
+
+      const filename = await storePDF(file);
+      const storedPDF = await loadPDF(filename);
+      
+      if (!storedPDF) {
+        throw new Error('Failed to store PDF');
+      }
+
+      const url = URL.createObjectURL(storedPDF);
+      setCurrentPDF({ url, name: filename });
+      toast.success('Resume uploaded successfully');
+    } catch (error) {
+      console.error('Error handling file:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to upload resume');
+    }
+  };
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0) {
+      await processFile(acceptedFiles[0]);
+    }
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/pdf': ['.pdf']
+    },
+    maxFiles: 1,
+    multiple: false,
+    noClick: false,
+    noKeyboard: false,
+    preventDropOnDocument: true
+  });
+
+  const handleStoredFileSelect = async (filename: string) => {
+    try {
+      if (currentPDF?.url) {
+        URL.revokeObjectURL(currentPDF.url);
+      }
+
+      const pdfBlob = await loadPDF(filename);
+      if (!pdfBlob) {
+        throw new Error('Failed to load PDF from storage');
+      }
+
+      const url = URL.createObjectURL(pdfBlob);
+      setCurrentPDF({ url, name: filename });
+    } catch (error) {
+      console.error('Error loading stored PDF:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to load PDF');
+    }
+  };
+
+  const handleDelete = async (filename: string) => {
+    try {
+      const success = await deletePDF(filename);
+      if (!success) {
+        throw new Error('Failed to delete PDF');
+      }
+
+      if (currentPDF?.name === filename) {
+        if (currentPDF.url) {
+          URL.revokeObjectURL(currentPDF.url);
+        }
+        setCurrentPDF(null);
+        setJobDescription('');
+        setAnalysisResult('');
+      }
+
+      toast.success('Resume deleted successfully');
+    } catch (error) {
+      console.error('Error deleting PDF:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to delete PDF');
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!currentPDF) {
+      toast.error('Please upload a resume first');
+      return;
+    }
+
+    if (!jobDescription.trim()) {
+      toast.error('Please enter a job description');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      // TODO: Implement LAMA model stuff
+      setAnalysisResult('Analysis will be implemented soon...');
+      toast.success('Analysis completed');
+    } catch (error) {
+      toast.error('Failed to analyze resume');
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const dropzoneProps = getRootProps();
+
+  return (
+    <div className="flex h-screen bg-white">
+      <Sidebar
+        onFileSelect={handleStoredFileSelect}
+        onDelete={handleDelete}
+        currentFile={currentPDF?.name ?? null}
+        onUploadClick={() => document.getElementById('dropzone-input')?.click()}
+      />
+      
+      <main className="flex-1 flex flex-col md:ml-80">
+        {!currentPDF ? (
+          <div className="flex-1 flex items-center justify-center p-4">
+            <div className="w-96">
+              <div
+                {...dropzoneProps}
+                className="cursor-pointer outline-none"
+                onClick={dropzoneProps.onClick}
+              >
+                <Card 
+                  className={`p-8 border-2 border-dashed transition-colors ${
+                    isDragActive 
+                      ? 'border-emerald-500 bg-emerald-50/50' 
+                      : 'border-gray-200 bg-white hover:border-emerald-500'
+                  }`}
+                >
+                  <input {...getInputProps()} id="dropzone-input" />
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="p-4 rounded-full bg-emerald-50">
+                      <Upload className="h-8 w-8 text-emerald-600" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-gray-900">Upload Resume</h2>
+                    <p className="text-sm text-gray-500 text-center">
+                      {isDragActive
+                        ? 'Drop your resume here...'
+                        : 'Drag and drop your resume here or click to choose a PDF file'}
+                    </p>
+                    <Button 
+                      type="button"
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    >
+                      Choose PDF File
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="flex-1 p-6 space-y-6 overflow-auto">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold text-gray-900">Resume Analysis</h1>
+              <div {...getRootProps()}>
+                <input {...getInputProps()} />
+                <Button 
+                  variant="outline" 
+                  className="border-gray-200 text-emerald-700 hover:bg-emerald-50"
+                >
+                  Upload New Resume
+                </Button>
+              </div>
+            </div>
+
+            <Card className="p-6 border-gray-200 bg-white">
+              <Label htmlFor="jobDescription" className="text-gray-900">
+                Job Description
+              </Label>
+              <Textarea
+                id="jobDescription"
+                placeholder="Paste the job description here..."
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                className="min-h-[150px] mt-2 border-gray-200 focus:ring-emerald-500"
+              />
+              <Button 
+                onClick={handleAnalyze} 
+                disabled={isAnalyzing}
+                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
+              </Button>
+            </Card>
+
+            {analysisResult && (
+              <Card className="p-6 border-gray-200 bg-white">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
+                <div className="whitespace-pre-wrap text-gray-800">{analysisResult}</div>
+              </Card>
+            )}
+          </div>
+        )}
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      <ToastContainer />
     </div>
   );
 }
