@@ -93,10 +93,11 @@ export default function SambaNovaDebug() {
     <Card className="p-6 border-gray-200 bg-white mt-4">
       <h2 className="text-lg font-semibold text-gray-900 mb-4">SambaNova Debug</h2>
       <Textarea 
-        placeholder="Job Listing"
+        ref={textareaRef}
+        placeholder="Job Listing (Optional: Provide context for resume optimization)"
         value={customPrompt}
         onChange={(e) => setCustomPrompt(e.target.value)}
-        className="mb-4 border-gray-200 focus:ring-emerald-500"
+        className="mb-4 border-gray-200 focus:ring-emerald-500 w-full resize-none overflow-hidden min-h-[100px]"
       />
       <div className="flex flex-wrap space-x-2 space-y-2 mb-4">
         <Button 
@@ -113,18 +114,32 @@ export default function SambaNovaDebug() {
         >
           {isLoading && queryType === 'analyze-gaps' ? 'Analyzing Gaps...' : 'Analyze Resume Gaps'}
         </Button>
-        {Object.values(ResumeTemplateType).map((templateType) => (
-          <Button 
-            key={templateType}
-            onClick={() => handleQuery(templateType)} 
-            disabled={isLoading || !parsedPDFContent}
-            className={`flex-1 ${queryType === templateType ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
-          >
-            {isLoading && queryType === templateType 
-              ? `Generating ${templateType} LaTeX...` 
-              : `${templateType.charAt(0).toUpperCase() + templateType.slice(1)} Resume`}
-          </Button>
-        ))}
+        {Object.values(ResumeTemplateType).map((templateType) => {
+          const colorMap = {
+            [ResumeTemplateType.CLASSIC]: 'bg-blue-600 hover:bg-blue-700',
+            [ResumeTemplateType.MODERN]: 'bg-purple-600 hover:bg-purple-700',
+            [ResumeTemplateType.ACADEMIC]: 'bg-red-600 hover:bg-red-700',
+            [ResumeTemplateType.CREATIVE]: 'bg-teal-600 hover:bg-teal-700',
+            [ResumeTemplateType.EXECUTIVE]: 'bg-indigo-600 hover:bg-indigo-700'
+          };
+
+          const buttonColor = queryType === templateType 
+            ? colorMap[templateType] 
+            : 'bg-gray-200 text-gray-700';
+
+          return (
+            <Button 
+              key={templateType}
+              onClick={() => handleQuery(templateType)} 
+              disabled={isLoading || !parsedPDFContent}
+              className={`flex-1 ${buttonColor} text-white`}
+            >
+              {isLoading && queryType === templateType 
+                ? `Generating ${templateType} LaTeX...` 
+                : `${templateType.charAt(0).toUpperCase() + templateType.slice(1)} Resume`}
+            </Button>
+          );
+        })}
       </div>
       {response && (
         <div className="mt-4 p-4 bg-gray-50 rounded">
