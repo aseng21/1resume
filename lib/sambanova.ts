@@ -15,16 +15,14 @@ const client = new OpenAI({
   dangerouslyAllowBrowser: true, // Added to allow browser usage
 });
 
-export async function getSambaNovaResponse(prompt: string) {
+export async function getSambaNovaResponse(prompt: string, systemPrompt?: string) {
   // Validate prompt
   if (!prompt || prompt.trim().length === 0) {
     throw new Error('Prompt cannot be empty');
   }
 
-  const messages: Message[] = [
-    { 
-      role: 'system', 
-      content: `You are a professional Resume Analysis Expert. Your primary objective is to:
+  // Default system prompt for resume optimization
+  const defaultSystemPrompt = `You are a professional Resume Analysis Expert. Your primary objective is to:
 1. Carefully analyze the provided job listing
 2. Thoroughly review the candidate's resume
 3. Strategically modify the resume to align perfectly with the job requirements
@@ -36,7 +34,29 @@ Focus on:
 - Restructuring experience sections to showcase most relevant achievements
 - Tailoring language to reflect the job's specific needs
 - Removing or de-emphasizing irrelevant information
-- Creating a targeted, compelling resume that increases the candidate's chances of securing an interview`
+- Creating a targeted, compelling resume that increases the candidate's chances of securing an interview`;
+
+  // Alternative system prompt for identifying resume gaps
+  const gapAnalysisSystemPrompt = `You are a critical Resume Reviewer. Your primary objective is to:
+1. Carefully analyze the provided job listing
+2. Thoroughly review the candidate's resume
+3. Identify and highlight:
+   - Missing skills or qualifications required by the job
+   - Gaps in experience relevant to the job requirements
+   - Potential weaknesses in the current resume
+   - Areas where the candidate falls short of the job description
+
+Focus on:
+- Comparing the resume line-by-line with the job listing
+- Pointing out specific skills or experiences not present
+- Suggesting concrete ways to improve the resume
+- Providing constructive, detailed feedback on resume deficiencies
+- Helping the candidate understand where they need to improve to be a stronger candidate`;
+
+  const messages: Message[] = [
+    { 
+      role: 'system', 
+      content: systemPrompt || defaultSystemPrompt
     },
     { role: 'user', content: prompt }
   ];

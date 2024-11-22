@@ -3,7 +3,7 @@ import { getSambaNovaResponse } from '@/lib/sambanova';
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt } = await request.json();
+    const { prompt, systemPrompt } = await request.json();
 
     if (!prompt) {
       return NextResponse.json({ 
@@ -13,7 +13,12 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const response = await getSambaNovaResponse(prompt);
+      // Determine system prompt based on the systemPrompt parameter
+      const resolvedSystemPrompt = systemPrompt === 'gap-analysis' 
+        ? undefined  // This will trigger the gap analysis system prompt in getSambaNovaResponse
+        : undefined;
+
+      const response = await getSambaNovaResponse(prompt, resolvedSystemPrompt);
       return NextResponse.json({ response });
     } catch (sambaError) {
       console.error('Detailed SambaNova API Error:', sambaError);

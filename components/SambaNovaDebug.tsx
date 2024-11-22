@@ -12,13 +12,16 @@ export default function SambaNovaDebug() {
   const [customPrompt, setCustomPrompt] = useState('');
   const { parsedPDFContent } = useContext(ParsedPDFContext);
 
-  const handleQuery = async () => {
+  const [queryType, setQueryType] = useState<'optimize' | 'analyze-gaps'>('optimize');
+
+  const handleQuery = async (type: 'optimize' | 'analyze-gaps') => {
     if (!parsedPDFContent?.rawText) {
       setResponse('No PDF content available');
       return;
     }
 
     setIsLoading(true);
+    setQueryType(type);
     try {
       const fullPrompt = customPrompt 
         ? `Job Listing:\n${customPrompt}\n\nCandidate Resume:\n${parsedPDFContent.rawText}` 
@@ -29,7 +32,10 @@ export default function SambaNovaDebug() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ prompt: fullPrompt }),
+        body: JSON.stringify({ 
+          prompt: fullPrompt,
+          systemPrompt: type === 'analyze-gaps' ? 'gap-analysis' : undefined 
+        }),
       });
 
       const data = await response.json();
@@ -61,13 +67,22 @@ export default function SambaNovaDebug() {
         onChange={(e) => setCustomPrompt(e.target.value)}
         className="mb-4 border-gray-200 focus:ring-emerald-500"
       />
-      <Button 
-        onClick={handleQuery} 
-        disabled={isLoading || !parsedPDFContent}
-        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-      >
-        {isLoading ? 'Querying...' : 'Send PDF Content with Job Listing'}
-      </Button>
+      <div className="flex space-x-4 mb-4">
+        <Button 
+          onClick={() => handleQuery('optimize')} 
+          disabled={isLoading || !parsedPDFContent}
+          className={`flex-1 ${queryType === 'optimize' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
+        >
+          {isLoading && queryType === 'optimize' ? 'Optimizing...' : 'Optimize Resume'}
+        </Button>
+        <Button 
+          onClick={() => handleQuery('analyze-gaps')} 
+          disabled={isLoading || !parsedPDFContent}
+          className={`flex-1 ${queryType === 'analyze-gaps' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
+        >
+          {isLoading && queryType === 'analyze-gaps' ? 'Analyzing Gaps...' : 'Analyze Resume Gaps'}
+        </Button>
+      </div>
       {response && (
         <div className="mt-4 p-4 bg-gray-50 rounded">
           <h3 className="font-semibold mb-2">Response:</h3>
