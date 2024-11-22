@@ -6,13 +6,37 @@ export async function POST(request: NextRequest) {
     const { prompt } = await request.json();
 
     if (!prompt) {
-      return NextResponse.json({ error: 'Prompt is required' }, { status: 400 });
+      return NextResponse.json({ 
+        error: 'Prompt is required',
+        details: 'The request must include a non-empty prompt'
+      }, { status: 400 });
     }
 
-    const response = await getSambaNovaResponse(prompt);
-    return NextResponse.json({ response });
-  } catch (error) {
-    console.error('SambaNova API Error:', error);
-    return NextResponse.json({ error: 'Failed to get response' }, { status: 500 });
+    try {
+      const response = await getSambaNovaResponse(prompt);
+      return NextResponse.json({ response });
+    } catch (sambaError) {
+      console.error('Detailed SambaNova API Error:', sambaError);
+      
+      // Provide more detailed error response
+      return NextResponse.json({ 
+        error: 'Failed to get response from SambaNova',
+        details: {
+          message: sambaError instanceof Error ? sambaError.message : 'Unknown error',
+          stack: sambaError instanceof Error ? sambaError.stack : null,
+          type: sambaError?.constructor?.name || 'UnknownError'
+        }
+      }, { status: 500 });
+    }
+  } catch (requestError) {
+    console.error('Request Processing Error:', requestError);
+    return NextResponse.json({ 
+      error: 'Failed to process request',
+      details: {
+        message: requestError instanceof Error ? requestError.message : 'Unknown error',
+        stack: requestError instanceof Error ? requestError.stack : null,
+        type: requestError?.constructor?.name || 'UnknownError'
+      }
+    }, { status: 500 });
   }
 }

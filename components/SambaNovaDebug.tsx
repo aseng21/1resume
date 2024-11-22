@@ -24,15 +24,22 @@ export default function SambaNovaDebug() {
         body: JSON.stringify({ prompt }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Network response was not ok');
+        // Handle error response with details
+        const errorMessage = data.details 
+          ? `Error: ${data.error}\nDetails: ${JSON.stringify(data.details, null, 2)}` 
+          : data.error || 'Unknown error occurred';
+        
+        setResponse(errorMessage);
+        throw new Error(errorMessage);
       }
 
-      const data = await response.json();
       setResponse(data.response);
     } catch (error) {
       console.error('Error in SambaNova query:', error);
-      setResponse('Error querying SambaNova');
+      setResponse(error instanceof Error ? error.message : 'Error querying SambaNova');
     } finally {
       setIsLoading(false);
     }
