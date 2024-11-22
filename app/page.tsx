@@ -15,7 +15,7 @@ import { Upload } from 'lucide-react';
 import AnalysisLoading from '@/components/AnalysisLoading';
 import ResumeViewer from '@/components/ResumeViewer';
 import '@/lib/pdfjs';
-import SambaNovaDebug from '@/components/SambaNovaDebug';
+import ResumeTemplates from '@/components/ResumeTemplates';
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
 
 export default function Home() {
@@ -233,7 +233,10 @@ export default function Home() {
         ) : (
           <div className="flex-1 p-6 space-y-6 overflow-auto">
             <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold text-gray-900">Resume Analysis</h1>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Resume Analysis</h1>
+                <p className="text-sm text-gray-500 mt-1">Upload your résumé and get AI-powered insights</p>
+              </div>
               <Button 
                 variant="outline" 
                 className="border-gray-200 text-emerald-700 hover:bg-emerald-50"
@@ -243,65 +246,136 @@ export default function Home() {
               </Button>
             </div>
 
-            <div className="flex flex-col md:flex-row gap-4 p-4">
-              <div className="w-full md:w-1/2">
-                <Card className="p-4">
-                  <Label htmlFor="upload-zone">Upload your résumé (PDF)</Label>
-                  <div
-                    {...getRootProps()}
-                    className="border-2 border-dashed rounded-lg p-6 mt-2 text-center cursor-pointer hover:border-primary"
-                  >
-                    <input {...getInputProps()} id="upload-zone" />
-                    {currentPDF ? (
-                      <div className="space-y-2">
-                        <p className="text-sm text-muted-foreground">{currentPDF.name}</p>
-                        <Button variant="outline" size="sm" onClick={returnToUploadView}>
-                          Remove PDF
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">
-                          Drag & drop your résumé here, or click to select
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Left Side - Job Description and Analysis */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                  {/* Top Section - Job Description */}
+                  <div className="p-6 h-[300px] flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <Label htmlFor="jobDescription" className="text-lg font-semibold text-gray-900">
+                          Job Description
+                        </Label>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Paste the job description to analyze your résumé against
                         </p>
                       </div>
-                    )}
+                    </div>
+                    <Textarea
+                      id="jobDescription"
+                      placeholder="Paste the job description here..."
+                      value={jobDescription}
+                      onChange={(e) => setJobDescription(e.target.value)}
+                      className="flex-1 resize-none border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 rounded-lg"
+                    />
+                    <Button 
+                      onClick={handleAnalyze} 
+                      disabled={isAnalyzing || !currentPDF}
+                      className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isAnalyzing ? (
+                        <div className="flex items-center justify-center">
+                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Analyzing...
+                        </div>
+                      ) : (
+                        <span>Analyze Resume</span>
+                      )}
+                    </Button>
                   </div>
-                </Card>
-                
-                {currentPDF && <ResumeViewer pdfUrl={currentPDF.url} />}
+
+                  {/* Bottom Section - Analysis Results */}
+                  {(isAnalyzing || analysisResult) && (
+                    <div className="border-t border-gray-100">
+                      {isAnalyzing ? (
+                        <div className="p-6">
+                          <AnalysisLoading />
+                        </div>
+                      ) : analysisResult && (
+                        <div className="p-6">
+                          <h2 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
+                          <div className="prose prose-sm max-w-none text-gray-600">
+                            {analysisResult}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Resume Templates */}
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                  <ResumeTemplates />
+                </div>
               </div>
 
-              <div className="w-full md:w-1/2">
-                <Card className="p-6 border-gray-200 bg-white">
-                  <Label htmlFor="jobDescription" className="text-gray-900">
-                    Job Description
-                  </Label>
-                  <Textarea
-                    id="jobDescription"
-                    placeholder="Paste the job description here..."
-                    value={jobDescription}
-                    onChange={(e) => setJobDescription(e.target.value)}
-                    className="min-h-[150px] mt-2 border-gray-200 focus:ring-emerald-500"
-                  />
-                  <Button 
-                    onClick={handleAnalyze} 
-                    disabled={isAnalyzing}
-                    className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-                  >
-                    {isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
-                  </Button>
-                </Card>
+              {/* Right Side - Resume Upload and Preview */}
+              <div className="space-y-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                  {/* Top Section - Upload */}
+                  <div className="p-6 h-[300px] flex flex-col">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <Label htmlFor="upload-zone" className="text-lg font-semibold text-gray-900">
+                          Your Résumé
+                        </Label>
+                        <p className="text-sm text-gray-500 mt-1">
+                          Upload your résumé in PDF format
+                        </p>
+                      </div>
+                    </div>
+                    <div
+                      {...getRootProps()}
+                      className="flex-1 border-2 border-dashed rounded-xl text-center cursor-pointer hover:border-emerald-500 transition-all duration-200 flex items-center justify-center group"
+                    >
+                      <input {...getInputProps()} id="upload-zone" />
+                      {currentPDF ? (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-center space-x-2 text-emerald-600">
+                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            <span className="font-medium">PDF Uploaded</span>
+                          </div>
+                          <p className="text-sm text-gray-600">{currentPDF.name}</p>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={returnToUploadView}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            Remove PDF
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="space-y-3">
+                          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
+                            <Upload className="w-6 h-6 text-emerald-600" />
+                          </div>
+                          <div>
+                            <p className="text-base font-medium text-gray-900">
+                              Drop your résumé here
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              or click to browse files
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                {isAnalyzing ? (
-                  <AnalysisLoading />
-                ) : analysisResult && (
-                  <Card className="p-6 border-gray-200 bg-white">
-                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
-                    <div className="whitespace-pre-wrap text-gray-800">{analysisResult}</div>
-                  </Card>
-                )}
+                  {/* Bottom Section - PDF Preview */}
+                  {currentPDF && (
+                    <div className="border-t border-gray-100">
+                      <ResumeViewer pdfUrl={currentPDF.url} />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
