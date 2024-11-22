@@ -330,7 +330,7 @@ export default function Home() {
                     </div>
                     <div
                       {...getRootProps()}
-                      className="flex-1 border-2 border-dashed rounded-xl text-center cursor-pointer hover:border-emerald-500 hover:ring-4 hover:ring-emerald-100 hover:bg-emerald-50/30 transition-all duration-200 flex items-center justify-center group"
+                      className="flex-1 border-2 border-dashed rounded-xl text-center cursor-pointer hover:border-emerald-500 transition-all duration-200 flex items-center justify-center group"
                     >
                       <input {...getInputProps()} id="upload-zone" />
                       {currentPDF ? (
