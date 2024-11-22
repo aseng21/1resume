@@ -12,6 +12,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@/components/Sidebar';
 import { Upload } from 'lucide-react';
 import AnalysisLoading from '@/components/AnalysisLoading';
+import ResumeViewer from '@/components/ResumeViewer';
+import '@/lib/pdfjs';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
@@ -31,36 +33,24 @@ export default function Home() {
     if (acceptedFiles.length === 0) return;
 
     const file = acceptedFiles[0];
-    try {
-      if (file.type !== 'application/pdf') {
-        throw new Error('Please upload a PDF file');
-      }
-
-      if (currentPDF?.url) {
-        URL.revokeObjectURL(currentPDF.url);
-      }
-
-      const filename = await storePDF(file);
-      const storedPDF = await loadPDF(filename);
-      
-      if (!storedPDF) {
-        throw new Error('Failed to store PDF');
-      }
-
-      const url = URL.createObjectURL(storedPDF);
-      setCurrentPDF({ url, name: filename });
-      toast.success('Resume uploaded successfully', {
-        toastId: 'resume-upload',
-        containerId: 'main-toast'
-      });
-    } catch (error) {
-      console.error('Error handling file:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to upload resume', {
-        toastId: 'resume-upload-error',
-        containerId: 'main-toast'
-      });
+    if (file.type !== 'application/pdf') {
+      toast.error('Please upload a PDF file');
+      return;
     }
-  }, [currentPDF]);
+
+    try {
+      // Create blob URL for preview
+      const url = URL.createObjectURL(file);
+      setCurrentPDF({ url, name: file.name });
+
+      // Store PDF
+      await storePDF(file);
+      toast.success('Resume uploaded successfully!');
+    } catch (error) {
+      console.error('Error processing PDF:', error);
+      toast.error('Error processing PDF');
+    }
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -229,34 +219,67 @@ export default function Home() {
               </Button>
             </div>
 
-            <Card className="p-6 border-gray-200 bg-white">
-              <Label htmlFor="jobDescription" className="text-gray-900">
-                Job Description
-              </Label>
-              <Textarea
-                id="jobDescription"
-                placeholder="Paste the job description here..."
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                className="min-h-[150px] mt-2 border-gray-200 focus:ring-emerald-500"
-              />
-              <Button 
-                onClick={handleAnalyze} 
-                disabled={isAnalyzing}
-                className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                {isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
-              </Button>
-            </Card>
+            <div className="flex flex-col md:flex-row gap-4 p-4">
+              <div className="w-full md:w-1/2">
+                <Card className="p-4">
+                  <Label htmlFor="upload-zone">Upload your résumé (PDF)</Label>
+                  <div
+                    {...getRootProps()}
+                    className="border-2 border-dashed rounded-lg p-6 mt-2 text-center cursor-pointer hover:border-primary"
+                  >
+                    <input {...getInputProps()} id="upload-zone" />
+                    {currentPDF ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">{currentPDF.name}</p>
+                        <Button variant="outline" size="sm" onClick={returnToUploadView}>
+                          Remove PDF
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                        <p className="text-sm text-muted-foreground">
+                          Drag & drop your résumé here, or click to select
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </Card>
+                
+                {currentPDF && <ResumeViewer pdfUrl={currentPDF.url} />}
+              </div>
 
-            {isAnalyzing ? (
-              <AnalysisLoading />
-            ) : analysisResult && (
-              <Card className="p-6 border-gray-200 bg-white">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
-                <div className="whitespace-pre-wrap text-gray-800">{analysisResult}</div>
-              </Card>
-            )}
+              <div className="w-full md:w-1/2">
+                <Card className="p-6 border-gray-200 bg-white">
+                  <Label htmlFor="jobDescription" className="text-gray-900">
+                    Job Description
+                  </Label>
+                  <Textarea
+                    id="jobDescription"
+                    placeholder="Paste the job description here..."
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    className="min-h-[150px] mt-2 border-gray-200 focus:ring-emerald-500"
+                  />
+                  <Button 
+                    onClick={handleAnalyze} 
+                    disabled={isAnalyzing}
+                    className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white"
+                  >
+                    {isAnalyzing ? 'Analyzing...' : 'Analyze Resume'}
+                  </Button>
+                </Card>
+
+                {isAnalyzing ? (
+                  <AnalysisLoading />
+                ) : analysisResult && (
+                  <Card className="p-6 border-gray-200 bg-white">
+                    <h2 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
+                    <div className="whitespace-pre-wrap text-gray-800">{analysisResult}</div>
+                  </Card>
+                )}
+              </div>
+            </div>
           </div>
         )}
       </main>
