@@ -16,8 +16,20 @@ export default function SambaNovaDebug() {
 
     setIsLoading(true);
     try {
-      const result = await getSambaNovaResponse(prompt);
-      setResponse(result);
+      const response = await fetch('/api/sambanova', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+
+      const data = await response.json();
+      setResponse(data.response);
     } catch (error) {
       console.error('Error in SambaNova query:', error);
       setResponse('Error querying SambaNova');
