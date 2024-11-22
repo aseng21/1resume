@@ -21,6 +21,7 @@
     "lucide-react": "^0.460.0",
     "next": "14.2.18",
     "pdfjs-dist": "^4.8.69",
+    "openai": "^4.73.0",
     "react": "^18",
     "react-dom": "^18",
     "react-dropzone": "^14.3.5",

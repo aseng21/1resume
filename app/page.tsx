@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { storePDF, loadPDF, deletePDF } from '@/lib/pdfStorage';
+import { retrieveParsedContent } from '@/lib/pdfParser';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@/components/Sidebar';
@@ -14,6 +15,8 @@ import { Upload } from 'lucide-react';
 import AnalysisLoading from '@/components/AnalysisLoading';
 import ResumeViewer from '@/components/ResumeViewer';
 import '@/lib/pdfjs';
+import SambaNovaDebug from '@/components/SambaNovaDebug';
+import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
@@ -64,6 +67,8 @@ export default function Home() {
     preventDropOnDocument: true
   });
 
+  const { setParsedPDFContent } = useContext(ParsedPDFContext);
+
   const handleStoredFileSelect = async (filename: string) => {
     try {
       if (currentPDF?.url) {
@@ -73,6 +78,25 @@ export default function Home() {
       const pdfBlob = await loadPDF(filename);
       if (!pdfBlob) {
         throw new Error('Failed to load PDF from storage');
+      }
+
+      // Extract UUID from filename
+      const parts = filename.split('-');
+      const uuid = parts[parts.length - 2];
+
+      // Retrieve parsed content
+      const parsedContent = await retrieveParsedContent(uuid);
+    
+      if (parsedContent) {
+        // Set parsed content in context
+        setParsedPDFContent(parsedContent);
+        console.log('Loaded Parsed PDF Content:', {
+          rawTextLength: parsedContent.rawText.length,
+          linesCount: parsedContent.lines.length
+        });
+      } else {
+        // Clear parsed content if not found
+        setParsedPDFContent(null);
       }
 
       const url = URL.createObjectURL(pdfBlob);
