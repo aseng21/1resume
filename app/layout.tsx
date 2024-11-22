@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import "./globals.css";
 import 'react-toastify/dist/ReactToastify.css';
 import { ToastContainer } from 'react-toastify';
+import { ParsedPDFProvider } from '@/lib/ParsedPDFContext';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -36,7 +37,9 @@ export default function RootLayout({
           "antialiased min-h-screen bg-background"
         )}
       >
-        {children}
+        <ParsedPDFProvider>
+          {children}
+        </ParsedPDFProvider>
         <ToastContainer
           position="bottom-right"
           autoClose={3000}
