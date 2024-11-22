@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
+import { ResumeTemplateType, getSystemPromptByType } from '@/lib/systemPrompts';
 
 export default function SambaNovaDebug() {
   const [response, setResponse] = useState('');
@@ -12,9 +13,9 @@ export default function SambaNovaDebug() {
   const [customPrompt, setCustomPrompt] = useState('');
   const { parsedPDFContent } = useContext(ParsedPDFContext);
 
-  const [queryType, setQueryType] = useState<'optimize' | 'analyze-gaps'>('optimize');
+  const [queryType, setQueryType] = useState<'optimize' | 'analyze-gaps' | ResumeTemplateType>('optimize');
 
-  const handleQuery = async (type: 'optimize' | 'analyze-gaps' | 'generate-latex') => {
+  const handleQuery = async (type: 'optimize' | 'analyze-gaps' | ResumeTemplateType) => {
     if (!parsedPDFContent?.rawText) {
       setResponse('No PDF content available');
       return;
@@ -25,12 +26,22 @@ export default function SambaNovaDebug() {
     
     // Reset response when starting a new query
     setResponse('');
+
+    // Check if the type is a resume template type
+    const isTemplateType = Object.values(ResumeTemplateType).includes(type as ResumeTemplateType);
     try {
-      const prompt = type === 'generate-latex' 
-        ? 'Generate a professional LaTeX resume' 
-        : (type === 'analyze-gaps' 
+      let prompt = 'Optimize resume for job application';
+      let systemPrompt;
+
+      if (isTemplateType) {
+        const templatePrompt = getSystemPromptByType(type as ResumeTemplateType);
+        prompt = 'Generate a professional LaTeX resume using the specified template';
+        systemPrompt = templatePrompt.systemPrompt;
+      } else {
+        systemPrompt = type === 'analyze-gaps' 
           ? 'Identify skill and experience gaps' 
-          : 'Optimize resume for job application');
+          : undefined;
+      }
 
       const response = await fetch('/api/sambanova', {
         method: 'POST',
@@ -39,7 +50,7 @@ export default function SambaNovaDebug() {
         },
         body: JSON.stringify({ 
           prompt: prompt,
-          systemPrompt: type,
+          systemPrompt: systemPrompt,
           additionalContext: {
             jobListing: customPrompt || '',
             resumeContent: parsedPDFContent.rawText
@@ -76,7 +87,7 @@ export default function SambaNovaDebug() {
         onChange={(e) => setCustomPrompt(e.target.value)}
         className="mb-4 border-gray-200 focus:ring-emerald-500"
       />
-      <div className="flex space-x-4 mb-4">
+      <div className="flex flex-wrap space-x-2 space-y-2 mb-4">
         <Button 
           onClick={() => handleQuery('optimize')} 
           disabled={isLoading || !parsedPDFContent}
@@ -91,13 +102,18 @@ export default function SambaNovaDebug() {
         >
           {isLoading && queryType === 'analyze-gaps' ? 'Analyzing Gaps...' : 'Analyze Resume Gaps'}
         </Button>
-        <Button 
-          onClick={() => handleQuery('generate-latex')} 
-          disabled={isLoading || !parsedPDFContent}
-          className={`flex-1 ${queryType === 'generate-latex' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
-        >
-          {isLoading && queryType === 'generate-latex' ? 'Generating LaTeX...' : 'Generate LaTeX Resume'}
-        </Button>
+        {Object.values(ResumeTemplateType).map((templateType) => (
+          <Button 
+            key={templateType}
+            onClick={() => handleQuery(templateType)} 
+            disabled={isLoading || !parsedPDFContent}
+            className={`flex-1 ${queryType === templateType ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
+          >
+            {isLoading && queryType === templateType 
+              ? `Generating ${templateType} LaTeX...` 
+              : `${templateType.charAt(0).toUpperCase() + templateType.slice(1)} Resume`}
+          </Button>
+        ))}
       </div>
       {response && (
         <div className="mt-4 p-4 bg-gray-50 rounded">
