@@ -23,7 +23,7 @@ export async function getSambaNovaResponse(prompt: string) {
 
   try {
     const completion = await client.chat.completions.create({
-      model: 'Meta-Llama-3.1-405B-Instruct',
+      model: ' Meta-Llama-3.1-70B-Instruct',
       messages,
       stream: false,
     });
