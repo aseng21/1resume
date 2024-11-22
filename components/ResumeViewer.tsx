@@ -56,7 +56,7 @@ export default function ResumeViewer({ pdfUrl }: ResumeViewerProps) {
                 <Loader2 className="w-8 h-8 animate-spin" />
               </div>
             }
-            className="max-w-full"
+            className="max-w-[600px] mx-auto"
           >
             {!loading && !error && (
               <Page 
@@ -64,7 +64,7 @@ export default function ResumeViewer({ pdfUrl }: ResumeViewerProps) {
                 renderTextLayer={true}
                 renderAnnotationLayer={true}
                 className="max-w-full h-auto"
-                scale={1.0}
+                scale={0.8}
               />
             )}
           </Document>
