@@ -21,7 +21,7 @@ export default function SambaNovaDebug() {
     setIsLoading(true);
     try {
       const fullPrompt = customPrompt 
-        ? `${customPrompt}\n\nContext from PDF:\n${parsedPDFContent.rawText}` 
+        ? `Job Listing:\n${customPrompt}\n\nCandidate Resume:\n${parsedPDFContent.rawText}` 
         : parsedPDFContent.rawText;
 
       const response = await fetch('/api/sambanova', {
