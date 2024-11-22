@@ -12,6 +12,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@/components/Sidebar';
 import { Upload } from 'lucide-react';
 import AnalysisLoading from '@/components/AnalysisLoading';
+import SambaNovaDebug from '@/components/SambaNovaDebug';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
@@ -257,6 +258,9 @@ export default function Home() {
                 <div className="whitespace-pre-wrap text-gray-800">{analysisResult}</div>
               </Card>
             )}
+            
+            {/* Add SambaNova Debug Component */}
+            <SambaNovaDebug />
           </div>
         )}
       </main>
