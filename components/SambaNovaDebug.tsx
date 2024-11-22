@@ -14,7 +14,7 @@ export default function SambaNovaDebug() {
 
   const [queryType, setQueryType] = useState<'optimize' | 'analyze-gaps'>('optimize');
 
-  const handleQuery = async (type: 'optimize' | 'analyze-gaps') => {
+  const handleQuery = async (type: 'optimize' | 'analyze-gaps' | 'generate-latex') => {
     if (!parsedPDFContent?.rawText) {
       setResponse('No PDF content available');
       return;
@@ -23,9 +23,11 @@ export default function SambaNovaDebug() {
     setIsLoading(true);
     setQueryType(type);
     try {
-      const fullPrompt = customPrompt 
-        ? `Job Listing:\n${customPrompt}\n\nCandidate Resume:\n${parsedPDFContent.rawText}` 
-        : parsedPDFContent.rawText;
+      const prompt = type === 'generate-latex' 
+        ? 'Generate a professional LaTeX resume' 
+        : (type === 'analyze-gaps' 
+          ? 'Identify skill and experience gaps' 
+          : 'Optimize resume for job application');
 
       const response = await fetch('/api/sambanova', {
         method: 'POST',
@@ -33,8 +35,12 @@ export default function SambaNovaDebug() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          prompt: fullPrompt,
-          systemPrompt: type === 'analyze-gaps' ? 'gap-analysis' : undefined 
+          prompt: prompt,
+          systemPrompt: type,
+          additionalContext: {
+            jobListing: customPrompt || '',
+            resumeContent: parsedPDFContent.rawText
+          }
         }),
       });
 
@@ -81,6 +87,13 @@ export default function SambaNovaDebug() {
           className={`flex-1 ${queryType === 'analyze-gaps' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
         >
           {isLoading && queryType === 'analyze-gaps' ? 'Analyzing Gaps...' : 'Analyze Resume Gaps'}
+        </Button>
+        <Button 
+          onClick={() => handleQuery('generate-latex')} 
+          disabled={isLoading || !parsedPDFContent}
+          className={`flex-1 ${queryType === 'generate-latex' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
+        >
+          {isLoading && queryType === 'generate-latex' ? 'Generating LaTeX...' : 'Generate LaTeX Resume'}
         </Button>
       </div>
       {response && (

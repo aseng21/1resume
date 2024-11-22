@@ -15,36 +15,89 @@ const client = new OpenAI({
   dangerouslyAllowBrowser: true, // Added to allow browser usage
 });
 
-export async function getSambaNovaResponse(prompt: string, systemPrompt?: string) {
+export async function getSambaNovaResponse(
+  prompt: string, 
+  systemPrompt?: string, 
+  additionalContext?: { 
+    jobListing?: string, 
+    resumeContent?: string 
+  }
+) {
   // Validate prompt
   if (!prompt || prompt.trim().length === 0) {
     throw new Error('Prompt cannot be empty');
   }
 
+  // LaTeX Resume Template
+  const latexResumeTemplate = `\\documentclass[11pt,a4paper]{moderncv}
+\\moderncvstyle{classic}
+\\moderncvcolor{blue}
+
+\\usepackage[utf8]{inputenc}
+\\usepackage[scale=0.75]{geometry}
+
+\\firstname{[FIRST_NAME]}
+\\lastname{[LAST_NAME]}
+\\email{[EMAIL]}
+\\phone{[PHONE]}
+
+\\begin{document}
+\\makecvtitle
+
+\\section{Professional Summary}
+[PROFESSIONAL_SUMMARY]
+
+\\section{Work Experience}
+[WORK_EXPERIENCE]
+
+\\section{Education}
+[EDUCATION]
+
+\\section{Skills}
+[SKILLS]
+\\end{document}`;
+
   // Default system prompt for resume optimization
-  const defaultSystemPrompt = `You are a professional Resume Analysis Expert. Your primary objective is to:
+  const defaultSystemPrompt = `You are a professional Resume Analysis Expert and LaTeX Resume Formatter. Your primary objectives are:
 1. Carefully analyze the provided job listing
 2. Thoroughly review the candidate's resume
 3. Strategically modify the resume to align perfectly with the job requirements
 4. Highlight and emphasize skills, experiences, and education most relevant to the specific job
-5. Ensure the modified resume presents the candidate as an ideal match for the position
+5. Prepare a structured LaTeX resume template that presents the candidate as an ideal match for the position
 
-Focus on:
-- Matching keywords from the job listing
-- Restructuring experience sections to showcase most relevant achievements
-- Tailoring language to reflect the job's specific needs
-- Removing or de-emphasizing irrelevant information
-- Creating a targeted, compelling resume that increases the candidate's chances of securing an interview`;
+Specific Instructions:
+- Match keywords from the job listing
+- Restructure experience sections to showcase most relevant achievements
+- Tailor language to reflect the job's specific needs
+- Remove or de-emphasize irrelevant information
+- Create a targeted, compelling resume that increases interview chances
+- Format the resume using the provided LaTeX template, filling in placeholders with optimized content`;
 
   // Alternative system prompt for identifying resume gaps
-  const gapAnalysisSystemPrompt = `find flaws in the users resume and list them out`;
+  const gapAnalysisSystemPrompt = `Analyze the resume and job listing to identify skill and experience gaps. Provide a detailed breakdown of areas where the candidate's current resume falls short of the job requirements.`;
+
+  // Combine context if available
+  let fullPrompt = prompt;
+  if (additionalContext) {
+    const contextParts = [];
+    if (additionalContext.jobListing) {
+      contextParts.push(`Job Listing:\n${additionalContext.jobListing}`);
+    }
+    if (additionalContext.resumeContent) {
+      contextParts.push(`Current Resume Content:\n${additionalContext.resumeContent}`);
+    }
+    contextParts.push(`LaTeX Resume Template:\n${latexResumeTemplate}`);
+    contextParts.push(`User Prompt:\n${prompt}`);
+    
+    fullPrompt = contextParts.join('\n\n');
+  }
 
   const messages: Message[] = [
     { 
       role: 'system', 
       content: systemPrompt || defaultSystemPrompt
     },
-    { role: 'user', content: prompt }
+    { role: 'user', content: fullPrompt }
   ];
 
   try {
