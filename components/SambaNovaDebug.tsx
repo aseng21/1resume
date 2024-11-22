@@ -22,6 +22,9 @@ export default function SambaNovaDebug() {
 
     setIsLoading(true);
     setQueryType(type);
+    
+    // Reset response when starting a new query
+    setResponse('');
     try {
       const prompt = type === 'generate-latex' 
         ? 'Generate a professional LaTeX resume' 
