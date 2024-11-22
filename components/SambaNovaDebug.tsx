@@ -4,6 +4,7 @@ import { useState, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { useRef, useEffect } from 'react';
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
 import { ResumeTemplateType, getSystemPromptByType } from '@/lib/systemPrompts';
 
@@ -11,6 +12,16 @@ export default function SambaNovaDebug() {
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [customPrompt, setCustomPrompt] = useState('');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Dynamic textarea resizing
+    useEffect(() => {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = `${textarea.scrollHeight}px`;
+      }
+    }, [customPrompt]);
   const { parsedPDFContent } = useContext(ParsedPDFContext);
 
   const [queryType, setQueryType] = useState<'optimize' | 'analyze-gaps' | ResumeTemplateType>('optimize');
