@@ -99,40 +99,36 @@ export default function SambaNovaDebug() {
         onChange={(e) => setCustomPrompt(e.target.value)}
         className="mb-4 border-gray-200 focus:ring-emerald-500 w-full resize-none overflow-hidden min-h-[100px]"
       />
-      <div className="flex flex-wrap space-x-2 space-y-2 mb-4">
+      <div className="grid grid-cols-3 gap-2 mb-4">
         <Button 
           onClick={() => handleQuery('optimize')} 
           disabled={isLoading || !parsedPDFContent}
-          className={`flex-1 ${queryType === 'optimize' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
+          className={`w-full ${queryType === 'optimize' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500 hover:bg-emerald-600'} text-white`}
         >
           {isLoading && queryType === 'optimize' ? 'Optimizing...' : 'Optimize Resume'}
         </Button>
         <Button 
           onClick={() => handleQuery('analyze-gaps')} 
           disabled={isLoading || !parsedPDFContent}
-          className={`flex-1 ${queryType === 'analyze-gaps' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-200 text-gray-700'} text-white`}
+          className={`w-full ${queryType === 'analyze-gaps' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-amber-500 hover:bg-amber-600'} text-white`}
         >
           {isLoading && queryType === 'analyze-gaps' ? 'Analyzing Gaps...' : 'Analyze Resume Gaps'}
         </Button>
         {Object.values(ResumeTemplateType).map((templateType) => {
           const colorMap = {
-            [ResumeTemplateType.CLASSIC]: 'bg-blue-600 hover:bg-blue-700',
-            [ResumeTemplateType.MODERN]: 'bg-purple-600 hover:bg-purple-700',
-            [ResumeTemplateType.ACADEMIC]: 'bg-red-600 hover:bg-red-700',
-            [ResumeTemplateType.CREATIVE]: 'bg-teal-600 hover:bg-teal-700',
-            [ResumeTemplateType.EXECUTIVE]: 'bg-indigo-600 hover:bg-indigo-700'
+            [ResumeTemplateType.CLASSIC]: 'bg-blue-500 hover:bg-blue-600',
+            [ResumeTemplateType.MODERN]: 'bg-purple-500 hover:bg-purple-600',
+            [ResumeTemplateType.ACADEMIC]: 'bg-red-500 hover:bg-red-600',
+            [ResumeTemplateType.CREATIVE]: 'bg-teal-500 hover:bg-teal-600',
+            [ResumeTemplateType.EXECUTIVE]: 'bg-indigo-500 hover:bg-indigo-600'
           };
-
-          const buttonColor = queryType === templateType 
-            ? colorMap[templateType] 
-            : 'bg-gray-200 text-gray-700';
 
           return (
             <Button 
               key={templateType}
               onClick={() => handleQuery(templateType)} 
               disabled={isLoading || !parsedPDFContent}
-              className={`flex-1 ${buttonColor} text-white`}
+              className={`w-full ${colorMap[templateType]} text-white`}
             >
               {isLoading && queryType === templateType 
                 ? `Generating ${templateType} LaTeX...` 
