@@ -1,6 +1,6 @@
+firebase_functions~=0.1.0
 scrapegraphai
 openai
 playwright
 python-dotenv
-firebase-functions
 firebase-admin
