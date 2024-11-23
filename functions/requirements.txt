@@ -1,0 +1,6 @@
+scrapegraphai
+openai
+playwright
+python-dotenv
+firebase-functions
+firebase-admin
