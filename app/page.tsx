@@ -17,12 +17,14 @@ import ResumeViewer from '@/components/ResumeViewer';
 import '@/lib/pdfjs';
 import ResumeTemplates from '@/components/ResumeTemplates';
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
+import cn from 'classnames';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
   const [jobDescription, setJobDescription] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState('');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     return () => {
@@ -184,17 +186,21 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="min-h-screen bg-gray-50">
       <Sidebar
         onFileSelect={handleStoredFileSelect}
         onDelete={handleDelete}
-        currentFile={currentPDF?.name ?? null}
+        currentFile={currentPDF?.name || null}
         onUploadClick={returnToUploadView}
+        onSidebarToggle={setIsSidebarOpen}
       />
-      
-      <main className="flex-1 flex flex-col md:ml-80">
+      <main className={cn(
+        "transition-all duration-200 ease-in-out",
+        isSidebarOpen ? "md:pl-72" : "md:pl-6",
+        "pt-14 md:pt-4 px-4 md:pr-6"
+      )}>
         {!currentPDF ? (
-          <div className="flex-1 flex items-center justify-center p-4">
+          <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center p-4">
             <div className="w-96">
               <div
                 {...getRootProps()}
@@ -202,14 +208,14 @@ export default function Home() {
                 onClick={getRootProps().onClick}
               >
                 <Card 
-                  className={`p-8 border-2 border-dashed transition-colors ${
+                  className={` p-8 border-2 border-dashed transition-colors${
                     isDragActive 
                       ? 'border-emerald-500 bg-emerald-50/50' 
                       : 'border-gray-200 bg-white hover:border-emerald-500'
                   }`}
                 >
                   <input {...getInputProps()} id="dropzone-input" />
-                  <div className="flex flex-col items-center gap-4">
+                  <div className="flex flex-col items-center gap-4 w-full max-w-sm">
                     <div className="p-4 rounded-full bg-emerald-50">
                       <Upload className="h-8 w-8 text-emerald-600" />
                     </div>
@@ -254,16 +260,16 @@ export default function Home() {
                   <div className="p-6 h-[300px] flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <Label htmlFor="jobDescription" className="text-lg font-semibold text-gray-900">
+                        <Label htmlFor="job-description" className="text-base font-medium text-gray-900">
                           Job Description
                         </Label>
                         <p className="text-sm text-gray-500 mt-1">
-                          Paste the job description to analyze your résumé against
+                          Paste the job description to analyze
                         </p>
                       </div>
                     </div>
                     <Textarea
-                      id="jobDescription"
+                      id="job-description"
                       placeholder="Paste the job description here..."
                       value={jobDescription}
                       onChange={(e) => setJobDescription(e.target.value)}
@@ -314,23 +320,21 @@ export default function Home() {
               </div>
 
               {/* Right Side - Resume Upload and Preview */}
-              <div className="space-y-6">
+              <div className="h-full flex flex-col">
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100">
                   {/* Top Section - Upload */}
-                  <div className="p-6 h-[300px] flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <Label htmlFor="upload-zone" className="text-lg font-semibold text-gray-900">
-                          Your Résumé
-                        </Label>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Upload your résumé in PDF format
-                        </p>
-                      </div>
+                  <div className="p-6">
+                    <div className="mb-4">
+                      <Label htmlFor="upload-zone" className="text-base font-medium text-gray-900">
+                        Your Résumé
+                      </Label>
+                      <p className="text-sm text-gray-500 mt-1">
+                        Upload your résumé in PDF format
+                      </p>
                     </div>
                     <div
                       {...getRootProps()}
-                      className="flex-1 border-2 border-dashed rounded-xl text-center cursor-pointer hover:border-emerald-500 transition-all duration-200 flex items-center justify-center group"
+                      className="h-[200px] flex items-center justify-center border-2 border-dashed rounded-xl cursor-pointer hover:border-emerald-500 transition-all duration-200"
                     >
                       <input {...getInputProps()} id="upload-zone" />
                       {currentPDF ? (
