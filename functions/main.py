@@ -5,7 +5,6 @@ import tempfile
 import subprocess
 from pathlib import Path
 from firebase_admin import initialize_app
-from firebase_functions import https_fn, options
 from flask import Flask, Response, request
 import requests
 from bs4 import BeautifulSoup
@@ -15,7 +14,6 @@ from playwright.sync_api import sync_playwright, Page
 import time
 import random
 import sys
-import functions_framework
 
 # Load environment variables
 load_dotenv()
@@ -26,12 +24,7 @@ try:
 except ValueError:
     pass  # App already initialized
 
-# Configure Firebase Functions
-options.set_global_options(
-    region="us-central1",
-    memory=2048,  # 2GB memory
-    timeout_sec=540  # 9 minutes timeout
-)
+app = Flask(__name__)
 
 def capture_full_error():
     """Capture full error details including traceback."""
@@ -306,31 +299,26 @@ def scrape_jobs(request):
         error_details = capture_full_error()
         return json.dumps({"error": str(e), "details": error_details}), 500
 
-@functions_framework.http
-def resume_functions(request):
-    """Main HTTP Cloud Function entry point."""
-    # Handle CORS preflight requests
+@app.route('/latex-to-pdf', methods=['POST', 'OPTIONS'])
+def latex_to_pdf_route():
     if request.method == 'OPTIONS':
         return handle_preflight()
+    response = latex_to_pdf(request)
+    return add_cors_headers(response)
 
-    try:
-        # Extract the path from the request URL
-        path = request.path.lstrip('/')
-        
-        # Route to appropriate function based on path
-        if path == 'latex-to-pdf':
-            return latex_to_pdf(request)
-        elif path == 'scrape-jobs':
-            return scrape_jobs(request)
-        else:
-            return json.dumps({"error": "Not Found"}), 404, {'Content-Type': 'application/json'}
-            
-    except Exception as e:
-        error_details = capture_full_error()
-        return json.dumps({"error": str(e), "details": error_details}), 500, {'Content-Type': 'application/json'}
+@app.route('/scrape-jobs', methods=['POST', 'OPTIONS'])
+def scrape_jobs_route():
+    if request.method == 'OPTIONS':
+        return handle_preflight()
+    response = scrape_jobs(request)
+    return add_cors_headers(response)
+
+@app.route('/', methods=['GET'])
+def health_check():
+    response = Response('OK', 200)
+    return add_cors_headers(response)
 
 if __name__ == "__main__":
     # Get port from environment variable or default to 8080
     port = int(os.environ.get('PORT', 8080))
-    app = Flask(__name__)
     app.run(host='0.0.0.0', port=port)

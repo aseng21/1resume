@@ -237,30 +237,49 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="flex-1 p-6 space-y-6 overflow-auto">
-            <div className="flex items-center justify-between">
+          <div className="flex-1 max-w-7xl mx-auto p-6 space-y-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Resume Analysis</h1>
-                <p className="text-sm text-gray-500 mt-1">Upload your résumé and get AI-powered insights</p>
+                <h1 className="text-3xl font-bold text-gray-900">Resume Analysis</h1>
+                <p className="text-sm text-gray-500 mt-2">Upload your résumé and get AI-powered insights</p>
               </div>
-              <Button 
-                variant="outline" 
-                className="border-gray-200 text-emerald-700 hover:bg-emerald-50"
-                onClick={returnToUploadView}
-              >
-                Upload New Resume
-              </Button>
+              <div className="flex items-center gap-3">
+                <Button 
+                  variant="outline" 
+                  className="flex-1 sm:flex-none border-gray-200 text-emerald-700 hover:bg-emerald-50 font-medium"
+                  onClick={returnToUploadView}
+                >
+                  <Upload className="w-4 h-4 mr-2" />
+                  Upload New Resume
+                </Button>
+                {currentPDF && (
+                  <Button 
+                    variant="outline" 
+                    className="flex-1 sm:flex-none border-gray-200 text-red-600 hover:bg-red-50 font-medium group relative"
+                    onClick={() => handleDelete(currentPDF.name)}
+                  >
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    <span className="truncate">Remove PDF</span>
+                    {/* Tooltip for long filenames */}
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                      {currentPDF.name}
+                    </div>
+                  </Button>
+                )}
+              </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left Side - Job Description and Analysis */}
-              <div className="space-y-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+              <div className="space-y-8">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                   {/* Top Section - Job Description */}
                   <div className="p-6 h-[300px] flex flex-col">
                     <div className="flex items-center justify-between mb-4">
                       <div>
-                        <Label htmlFor="job-description" className="text-base font-medium text-gray-900">
+                        <Label htmlFor="job-description" className="text-lg font-semibold text-gray-900">
                           Job Description
                         </Label>
                         <p className="text-sm text-gray-500 mt-1">
@@ -278,7 +297,7 @@ export default function Home() {
                     <Button 
                       onClick={handleAnalyze} 
                       disabled={isAnalyzing || !currentPDF}
-                      className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
                     >
                       {isAnalyzing ? (
                         <div className="flex items-center justify-center">
@@ -296,7 +315,7 @@ export default function Home() {
 
                   {/* Bottom Section - Analysis Results */}
                   {(isAnalyzing || analysisResult) && (
-                    <div className="border-t border-gray-100">
+                    <div className="border-t border-gray-200">
                       {isAnalyzing ? (
                         <div className="p-6">
                           <AnalysisLoading />
@@ -314,54 +333,48 @@ export default function Home() {
                 </div>
 
                 {/* Resume Templates */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <ResumeTemplates />
                 </div>
               </div>
 
               {/* Right Side - Resume Upload and Preview */}
               <div className="h-full flex flex-col">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 flex-1">
                   {/* Top Section - Upload */}
                   <div className="p-6">
-                    <div className="mb-4">
-                      <Label htmlFor="upload-zone" className="text-base font-medium text-gray-900">
+                    <div className="mb-6">
+                      <Label htmlFor="upload-zone" className="text-lg font-semibold text-gray-900">
                         Your Résumé
                       </Label>
                       <p className="text-sm text-gray-500 mt-1">
                         Upload your résumé in PDF format
                       </p>
                     </div>
-                    <div
-                      {...getRootProps()}
-                      className="h-[200px] flex items-center justify-center border-2 border-dashed rounded-xl cursor-pointer hover:border-emerald-500 transition-all duration-200"
-                    >
-                      <input {...getInputProps()} id="upload-zone" />
-                      {currentPDF ? (
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-center space-x-2 text-emerald-600">
-                            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <span className="font-medium">PDF Uploaded</span>
-                          </div>
-                          <p className="text-sm text-gray-600">{currentPDF.name}</p>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={returnToUploadView}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            Remove PDF
-                          </Button>
+                    {currentPDF ? (
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-center p-4 bg-emerald-50 rounded-lg border border-emerald-100">
+                          <svg className="w-5 h-5 shrink-0 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                          </svg>
+                          <span className="font-medium text-emerald-700 break-all line-clamp-2 text-sm">
+                            {currentPDF.name}
+                          </span>
                         </div>
-                      ) : (
-                        <div className="space-y-3">
-                          <div className="w-12 h-12 mx-auto rounded-full bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors duration-200">
-                            <Upload className="w-6 h-6 text-emerald-600" />
+                        <ResumeViewer pdfUrl={currentPDF.url} />
+                      </div>
+                    ) : (
+                      <div
+                        {...getRootProps()}
+                        className="h-[300px] flex flex-col items-center justify-center border-2 border-dashed rounded-xl cursor-pointer hover:border-emerald-500 transition-all duration-200 bg-gray-50 hover:bg-gray-100/50"
+                      >
+                        <input {...getInputProps()} id="upload-zone" />
+                        <div className="text-center space-y-4">
+                          <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mx-auto">
+                            <Upload className="h-6 w-6 text-emerald-600" />
                           </div>
                           <div>
-                            <p className="text-base font-medium text-gray-900">
+                            <p className="text-base font-medium text-gray-900 mb-1">
                               Drop your résumé here
                             </p>
                             <p className="text-sm text-gray-500">
@@ -369,16 +382,9 @@ export default function Home() {
                             </p>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Bottom Section - PDF Preview */}
-                  {currentPDF && (
-                    <div className="border-t border-gray-100">
-                      <ResumeViewer pdfUrl={currentPDF.url} />
-                    </div>
-                  )}
                 </div>
               </div>
             </div>

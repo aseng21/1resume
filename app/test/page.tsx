@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 
-const LATEX_TO_PDF_URL = 'https://latex-to-pdf-moqypekqyq-uc.a.run.app';
-const SCRAPE_JOBS_URL = 'https://scrape-jobs-moqypekqyq-uc.a.run.app';
+const LATEX_TO_PDF_URL = 'https://resume-functions-490809062275.us-central1.run.app/latex-to-pdf';
+const SCRAPE_JOBS_URL = 'https://resume-functions-490809062275.us-central1.run.app/scrape-jobs';
 
 export default function TestPage() {
   const [latexInput, setLatexInput] = useState('\\documentclass{article}\n\\begin{document}\nHello, World!\n\\end{document}');
@@ -34,7 +34,8 @@ export default function TestPage() {
       setResponse('PDF generated successfully');
     } catch (error) {
       console.error('Error:', error);
-      setResponse(`LaTeX to PDF Response: ${JSON.stringify(error.message || error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setResponse(`LaTeX to PDF Response: ${errorMessage}`);
     } finally {
       setLoading(false);
     }
@@ -60,7 +61,8 @@ export default function TestPage() {
       setResponse(`Job Scraper Response: ${JSON.stringify(data, null, 2)}`);
     } catch (error) {
       console.error('Error:', error);
-      setResponse(`Job Scraper Response: ${JSON.stringify(error.message || error)}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setResponse(`Job Scraper Response: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

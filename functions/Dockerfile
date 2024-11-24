@@ -44,8 +44,8 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 # Install Playwright browsers
-RUN playwright install chromium
-RUN playwright install-deps chromium
+RUN python -m playwright install chromium
+RUN python -m playwright install-deps chromium
 
 # Copy application code
 COPY . .
@@ -59,5 +59,5 @@ RUN which pdflatex
 # Set environment variables
 ENV PORT=8080
 
-# Start the Functions Framework
-CMD functions-framework --target=resume_functions --port=${PORT}
+# Command to run the application
+CMD ["python", "main.py"]
