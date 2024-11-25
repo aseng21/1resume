@@ -1,10 +1,11 @@
 firebase-admin==6.6.0
-flask==3.0.2
+flask
+flask-cors
 scrapegraphai==1.31.1
-python-dotenv==1.0.1
-requests==2.32.3
-beautifulsoup4==4.12.3
 playwright>=1.43.0
+requests
+python-dotenv
+beautifulsoup4==4.12.3
 pylatex==1.4.2
 latexcodec==2.0.1
 openai

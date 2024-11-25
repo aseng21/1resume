@@ -5,7 +5,7 @@ import tempfile
 import subprocess
 from pathlib import Path
 from firebase_admin import initialize_app
-from flask import Flask, Response, request
+from flask import Flask, Response, request, jsonify
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -14,6 +14,7 @@ from playwright.sync_api import sync_playwright, Page
 import time
 import random
 import sys
+import base64
 
 # Load environment variables
 load_dotenv()
@@ -52,94 +53,33 @@ def handle_preflight():
     response = add_cors_headers(response)
     return response
 
-def latex_to_pdf(request):
-    """
-    Firebase function to convert LaTeX to PDF.
-    """
-    import subprocess
-    from pathlib import Path
-
-    # Handle OPTIONS request for CORS
+@app.route('/latex-to-pdf', methods=['POST', 'OPTIONS'])
+def latex_to_pdf_route():
     if request.method == 'OPTIONS':
         return handle_preflight()
-
     try:
-        # Check if request is POST
-        if request.method != 'POST':
-            return add_cors_headers(Response(
-                json.dumps({'error': 'Only POST requests are supported'}),
-                status=405,
-                content_type='application/json'
-            ))
+        data = request.get_json()
+        latex_content = data.get('latex')
+        
+        if not latex_content:
+            return jsonify({'error': 'No LaTeX content provided'}), 400
 
-        # Get LaTeX content from request
-        request_json = request.get_json()
-        if not request_json or 'latex' not in request_json:
-            return add_cors_headers(Response(
-                json.dumps({'error': 'No LaTeX content provided'}),
-                status=400,
-                content_type='application/json'
-            ))
+        # Call LaTeX.Online API
+        response = requests.post(
+            'https://latexonline.cc/compile',
+            data=latex_content.encode('utf-8'),
+            headers={'Content-Type': 'application/x-latex'}
+        )
 
-        latex_content = request_json['latex']
+        if response.status_code != 200:
+            return jsonify({'error': 'PDF generation failed', 'details': response.text}), 500
 
-        # Create temporary directory
-        with tempfile.TemporaryDirectory() as temp_dir:
-            temp_dir_path = Path(temp_dir)
-            tex_file = temp_dir_path / 'document.tex'
-            
-            # Write LaTeX content to file
-            tex_file.write_text(latex_content)
-            
-            try:
-                # Run pdflatex
-                subprocess.run(
-                    ['pdflatex', '-interaction=nonstopmode', tex_file.name],
-                    cwd=temp_dir,
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                
-                # Read the generated PDF
-                pdf_file = temp_dir_path / 'document.pdf'
-                if pdf_file.exists():
-                    pdf_content = pdf_file.read_bytes()
-                    
-                    # Return PDF file
-                    return add_cors_headers(Response(
-                        pdf_content,
-                        status=200,
-                        content_type='application/pdf'
-                    ))
-                else:
-                    return add_cors_headers(Response(
-                        json.dumps({'error': 'PDF generation failed', 'details': 'Output file not found'}),
-                        status=500,
-                        content_type='application/json'
-                    ))
-                    
-            except subprocess.CalledProcessError as e:
-                return add_cors_headers(Response(
-                    json.dumps({
-                        'error': 'LaTeX compilation failed',
-                        'details': e.stderr
-                    }),
-                    status=500,
-                    content_type='application/json'
-                ))
-                
+        # Return PDF as base64
+        pdf_base64 = base64.b64encode(response.content).decode('utf-8')
+        return jsonify({'pdf': pdf_base64})
+
     except Exception as e:
-        error_details = capture_full_error()
-        return add_cors_headers(Response(
-            json.dumps({
-                'error': 'Error during conversion',
-                'details': str(e),
-                'type': type(e).__name__
-            }),
-            status=500,
-            content_type='application/json'
-        ))
+        return jsonify({'error': str(e)}), 500
 
 def scrape_jobs(request):
     """
@@ -298,13 +238,6 @@ def scrape_jobs(request):
     except Exception as e:
         error_details = capture_full_error()
         return json.dumps({"error": str(e), "details": error_details}), 500
-
-@app.route('/latex-to-pdf', methods=['POST', 'OPTIONS'])
-def latex_to_pdf_route():
-    if request.method == 'OPTIONS':
-        return handle_preflight()
-    response = latex_to_pdf(request)
-    return add_cors_headers(response)
 
 @app.route('/scrape-jobs', methods=['POST', 'OPTIONS'])
 def scrape_jobs_route():

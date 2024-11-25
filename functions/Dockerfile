@@ -6,6 +6,11 @@ RUN apt-get update && \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-latex-extra \
+    texlive-fonts-extra \
+    texlive-xetex \
+    texlive-lang-english \
+    texlive-plain-generic \
+    lmodern \
     wget \
     gnupg \
     ca-certificates \
