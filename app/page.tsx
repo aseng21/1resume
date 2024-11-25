@@ -5,27 +5,21 @@ import { useDropzone } from 'react-dropzone';
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { storePDF, loadPDF, deletePDF } from '@/lib/pdfStorage';
 import { retrieveParsedContent } from '@/lib/pdfParser';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from '@/components/Sidebar';
 import { Upload } from 'lucide-react';
-import AnalysisLoading from '@/components/AnalysisLoading';
 import ResumeViewer from '@/components/ResumeViewer';
 import '@/lib/pdfjs';
 import ResumeTemplates from '@/components/ResumeTemplates';
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
 import cn from 'classnames';
 import Image from 'next/image';
-import SambaNovaDebug from '@/components/SambaNovaDebug';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
-  const [jobDescription, setJobDescription] = useState('');
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState('');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
@@ -46,7 +40,6 @@ export default function Home() {
     }
 
     try {
-      // Create blob URL for preview
       const url = URL.createObjectURL(file);
       setCurrentPDF({ url, name: file.name });
 
@@ -71,7 +64,7 @@ export default function Home() {
     preventDropOnDocument: true
   });
 
-  const { setParsedPDFContent } = useContext(ParsedPDFContext);
+  const { setParsedPDFContent, parsedPDFContent } = useContext(ParsedPDFContext);
 
   const handleStoredFileSelect = async (filename: string) => {
     try {
@@ -92,14 +85,12 @@ export default function Home() {
       const parsedContent = await retrieveParsedContent(uuid);
     
       if (parsedContent) {
-        // Set parsed content in context
         setParsedPDFContent(parsedContent);
         console.log('Loaded Parsed PDF Content:', {
           rawTextLength: parsedContent.rawText.length,
           linesCount: parsedContent.lines.length
         });
       } else {
-        // Clear parsed content if not found
         setParsedPDFContent(null);
       }
 
@@ -126,8 +117,6 @@ export default function Home() {
           URL.revokeObjectURL(currentPDF.url);
         }
         setCurrentPDF(null);
-        setJobDescription('');
-        setAnalysisResult('');
       }
 
       toast.success('Resume deleted successfully', {
@@ -143,48 +132,11 @@ export default function Home() {
     }
   };
 
-  const handleAnalyze = async () => {
-    if (!currentPDF) {
-      toast.error('Please upload a resume first', {
-        toastId: 'analyze-error',
-        containerId: 'main-toast'
-      });
-      return;
-    }
-
-    if (!jobDescription.trim()) {
-      toast.error('Please enter a job description', {
-        toastId: 'job-description-error',
-        containerId: 'main-toast'
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-    try {
-      // TODO: Implement LAMA model stuff
-      setAnalysisResult('Analysis will be implemented soon...');
-      toast.success('Analysis completed', {
-        toastId: 'analysis-success',
-        containerId: 'main-toast'
-      });
-    } catch {
-      toast.error('Failed to analyze resume', {
-        toastId: 'analysis-error',
-        containerId: 'main-toast'
-      });
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
-
   const returnToUploadView = () => {
     if (currentPDF?.url) {
       URL.revokeObjectURL(currentPDF.url);
     }
     setCurrentPDF(null);
-    setJobDescription('');
-    setAnalysisResult('');
   };
 
   return (
@@ -274,67 +226,8 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Left Side - Job Description and Analysis */}
+              {/* Left Side - Resume Templates */}
               <div className="space-y-8">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                  {/* Top Section - Job Description */}
-                  <div className="p-6 h-[300px] flex flex-col">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <Label htmlFor="job-description" className="text-lg font-semibold text-gray-900">
-                          Job Description
-                        </Label>
-                        <p className="text-sm text-gray-500 mt-1">
-                          Paste the job description to analyze
-                        </p>
-                      </div>
-                    </div>
-                    <Textarea
-                      id="job-description"
-                      placeholder="Paste the job description here..."
-                      value={jobDescription}
-                      onChange={(e) => setJobDescription(e.target.value)}
-                      className="flex-1 resize-none border-gray-200 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 rounded-lg"
-                    />
-                    <Button 
-                      onClick={handleAnalyze} 
-                      disabled={isAnalyzing || !currentPDF}
-                      className="w-full mt-4 bg-emerald-600 hover:bg-emerald-700 text-white transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                    >
-                      {isAnalyzing ? (
-                        <div className="flex items-center justify-center">
-                          <svg className="animate-spin -ml-1 mr-3 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Analyzing...
-                        </div>
-                      ) : (
-                        <span>Analyze Resume</span>
-                      )}
-                    </Button>
-                  </div>
-
-                  {/* Bottom Section - Analysis Results */}
-                  {(isAnalyzing || analysisResult) && (
-                    <div className="border-t border-gray-200">
-                      {isAnalyzing ? (
-                        <div className="p-6">
-                          <AnalysisLoading />
-                        </div>
-                      ) : analysisResult && (
-                        <div className="p-6">
-                          <h2 className="text-lg font-semibold text-gray-900 mb-4">Analysis Results</h2>
-                          <div className="prose prose-sm max-w-none text-gray-600">
-                            {analysisResult}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Resume Templates */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                   <ResumeTemplates />
                 </div>
@@ -392,9 +285,6 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            {setParsedPDFContent && (
-              <SambaNovaDebug />
-            )}
           </div>
         )}
       </main>

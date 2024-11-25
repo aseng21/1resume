@@ -1,50 +1,53 @@
 export interface ResumeData {
-  basics: {
-    name: string;
+  name: string;
+  contact: {
     email: string;
-    phone: string;
+    phone?: string;
+    location?: string;
+    linkedin?: string;
+    github?: string;
     website?: string;
-    profiles?: Array<{
-      url: string;
-    }>;
   };
+  summary?: string;
   education: Array<{
-    institution: string;
-    area: string;
-    studyType: string;
-    startDate: string;
-    endDate: string;
-    score?: string;
-    location: string;
+    school: string;
+    degree: string;
+    field?: string;
+    date: string;
+    gpa?: string;
+    location?: string;
+    achievements?: string[];
   }>;
-  work: Array<{
+  experience: Array<{
     company: string;
-    position: string;
-    location: string;
-    startDate: string;
-    endDate: string;
-    highlights: string[];
+    title: string;
+    location?: string;
+    date: string;
+    achievements: string[];
   }>;
-  skills: Array<{
-    name: string;
-    keywords: string[];
-  }>;
-  projects: Array<{
+  projects?: Array<{
     name: string;
     description: string;
-    highlights: string[];
-    keywords: string[];
+    technologies?: string[];
+    link?: string;
+    achievements?: string[];
   }>;
-  awards: Array<{
-    title: string;
-    date: string;
-    awarder: string;
+  skills?: {
+    languages?: string[];
+    frameworks?: string[];
+    tools?: string[];
+    other?: string[];
+  };
+  certifications?: Array<{
+    name: string;
+    issuer?: string;
+    date?: string;
+    link?: string;
   }>;
-  volunteer: Array<{
-    organization: string;
-    position: string;
-    startDate: string;
-    endDate: string;
-    summary: string;
+  awards?: Array<{
+    name: string;
+    issuer?: string;
+    date?: string;
+    description?: string;
   }>;
 }

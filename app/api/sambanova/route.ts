@@ -1,52 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSambaNovaResponse } from '@/lib/sambanova';
+import { callSambaNova } from '@/lib/sambanova';
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, systemPrompt, additionalContext } = await request.json();
+    const { role, jobDescription } = await request.json();
 
-    if (!prompt) {
+    if (!role || !jobDescription) {
       return NextResponse.json({ 
-        error: 'Prompt is required',
-        details: 'The request must include a non-empty prompt'
+        error: 'Missing required fields',
+        details: 'The request must include both role and jobDescription'
       }, { status: 400 });
     }
 
-    try {
-      console.log('Processing request:', {
-        prompt,
-        systemPrompt: systemPrompt || 'default',
-        hasContext: !!additionalContext
-      });
+    const prompt = `Given this job description:\n${jobDescription}\n\nOptimize and tailor a resume for this role, focusing on relevant skills and experiences.`;
+    const result = await callSambaNova(prompt, 0.2);
 
-      const response = await getSambaNovaResponse(
-        prompt,
-        systemPrompt,
-        additionalContext
-      );
-
-      console.log('Successfully processed request');
-      return NextResponse.json(response);
-    } catch (error) {
-      console.error('SambaNova API Error:', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : 'No stack trace'
-      });
-
-      return NextResponse.json({ 
-        error: 'Failed to get response from SambaNova',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }, { status: 500 });
-    }
+    console.log('Successfully processed request');
+    return NextResponse.json(result);
   } catch (error) {
-    console.error('Request processing error:', {
+    console.error('SambaNova API Error:', {
       error: error instanceof Error ? error.message : 'Unknown error',
       stack: error instanceof Error ? error.stack : 'No stack trace'
     });
 
     return NextResponse.json({ 
-      error: 'Failed to process request',
+      error: 'Failed to get response from SambaNova',
       details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 400 });
+    }, { status: 500 });
   }
 }
