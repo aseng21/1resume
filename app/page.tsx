@@ -18,6 +18,7 @@ import '@/lib/pdfjs';
 import ResumeTemplates from '@/components/ResumeTemplates';
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
 import cn from 'classnames';
+import Image from 'next/image';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
@@ -344,9 +345,11 @@ export default function Home() {
                   {/* Top Section - Upload */}
                   <div className="p-6">
                     <div className="mb-6">
-                      <Label htmlFor="upload-zone" className="text-lg font-semibold text-gray-900">
-                        Your Résumé
-                      </Label>
+                      <div className="flex items-center mt-2">
+                        <Label htmlFor="upload-zone" className="text-lg font-semibold text-gray-900">
+                          Your Résumé
+                        </Label>
+                      </div>
                       <p className="text-sm text-gray-500 mt-1">
                         Upload your résumé in PDF format
                       </p>

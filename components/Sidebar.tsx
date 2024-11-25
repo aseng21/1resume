@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { auth } from '@/lib/firebase';
 import { User } from 'firebase/auth';
 import AuthModal from './AuthModal';
+import Image from 'next/image';
 
 interface SidebarProps {
   onFileSelect: (file: string) => void;
@@ -132,7 +133,17 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
         {/* Header */}
         <div className="flex flex-col h-full">
           <div className="h-14 flex items-center px-4 border-b border-gray-200 md:justify-between">
-            <h2 className="text-lg font-semibold hidden md:block">1Resume</h2>
+            <div className="hidden md:block mt-3 ml-1">
+              <Image
+                src="/logo.svg"
+                alt="1resume Logo"
+                width={32}
+                height={32}
+                quality={100}
+                priority
+                className="h-10 w-auto object-contain"
+              />
+            </div>
           </div>
           <div className="p-4">
             <Button 
