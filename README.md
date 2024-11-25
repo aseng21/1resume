@@ -27,7 +27,7 @@
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/1resume.git
+git clone https://github.com/aseng21/1resume.git
 ```
 
 2. Install dependencies:
