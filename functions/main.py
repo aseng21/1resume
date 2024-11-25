@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 from firebase_admin import initialize_app
 from flask import Flask, Response, request, jsonify
+from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -26,6 +27,13 @@ except ValueError:
     pass  # App already initialized
 
 app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:3000", "https://1resume.vercel.app"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
 
 def capture_full_error():
     """Capture full error details including traceback."""
@@ -41,9 +49,11 @@ def add_cors_headers(response):
     if not isinstance(response, Response):
         response = Response(response)
     
-    response.headers['Access-Control-Allow-Origin'] = '*'
+    origin = request.headers.get('Origin')
+    if origin in ['http://localhost:3000', 'https://1resume.vercel.app']:
+        response.headers['Access-Control-Allow-Origin'] = origin
     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS'
-    response.headers['Access-Control-Allow-Headers'] = 'Content-Type'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     response.headers['Access-Control-Max-Age'] = '3600'
     return response
 
@@ -53,33 +63,153 @@ def handle_preflight():
     response = add_cors_headers(response)
     return response
 
+def parse_latex_error(log_content):
+    """Parse LaTeX log content for specific error types."""
+    error_details = "LaTeX compilation failed:\n"
+    error_lines = []
+    
+    # Common error patterns
+    package_error = False
+    font_error = False
+    syntax_error = False
+    
+    for line in log_content.split('\n'):
+        # Package errors
+        if "! LaTeX Error: File" in line and ".sty' not found" in line:
+            package_error = True
+            error_lines.append(line)
+        # Font errors
+        elif "! Font" in line or "! LaTeX Error: Font" in line:
+            font_error = True
+            error_lines.append(line)
+        # General errors
+        elif '!' in line or 'Error' in line or 'Fatal' in line:
+            syntax_error = True
+            error_lines.append(line)
+    
+    if package_error:
+        error_details += "\nMissing LaTeX package detected. Please check if all required packages are installed."
+    if font_error:
+        error_details += "\nFont-related error detected. Please check if all required fonts are installed."
+    if syntax_error:
+        error_details += "\nLaTeX syntax error detected. Please check your LaTeX code."
+    
+    if error_lines:
+        error_details += "\n\nDetailed errors:\n" + '\n'.join(error_lines)
+    else:
+        error_details += "\n" + log_content
+    
+    return error_details
+
 @app.route('/latex-to-pdf', methods=['POST', 'OPTIONS'])
 def latex_to_pdf_route():
     if request.method == 'OPTIONS':
         return handle_preflight()
     try:
+        # Ensure we have JSON data
+        if not request.is_json:
+            return jsonify({
+                'error': 'Invalid Content-Type',
+                'details': 'Request must be application/json',
+                'type': 'ContentTypeError'
+            }), 400
+
         data = request.get_json()
+        if not data:
+            return jsonify({
+                'error': 'No JSON data provided',
+                'details': 'Request body is empty',
+                'type': 'EmptyRequestError'
+            }), 400
+            
         latex_content = data.get('latex')
-        
         if not latex_content:
-            return jsonify({'error': 'No LaTeX content provided'}), 400
+            return jsonify({
+                'error': 'No LaTeX content provided',
+                'details': 'latex field is required in request body',
+                'type': 'ValidationError'
+            }), 400
 
-        # Call LaTeX.Online API
-        response = requests.post(
-            'https://latexonline.cc/compile',
-            data=latex_content.encode('utf-8'),
-            headers={'Content-Type': 'application/x-latex'}
-        )
+        # Create a temporary directory for LaTeX compilation
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Write LaTeX content to a temporary file
+            tex_file = Path(temp_dir) / "document.tex"
+            tex_file.write_text(latex_content)
 
-        if response.status_code != 200:
-            return jsonify({'error': 'PDF generation failed', 'details': response.text}), 500
+            try:
+                # Run pdflatex twice to resolve references
+                for i in range(2):
+                    process = subprocess.run(
+                        [
+                            'pdflatex',
+                            '-interaction=nonstopmode',
+                            '-halt-on-error',
+                            '-file-line-error',
+                            tex_file.name
+                        ],
+                        cwd=temp_dir,
+                        capture_output=True,
+                        text=True
+                    )
+                    
+                    # Check for compilation errors
+                    if process.returncode != 0:
+                        # Read the log file if it exists
+                        log_file = Path(temp_dir) / "document.log"
+                        
+                        if log_file.exists():
+                            log_content = log_file.read_text()
+                            error_details = parse_latex_error(log_content)
+                        else:
+                            error_details = process.stderr if process.stderr else process.stdout
+                        
+                        print(f"LaTeX compilation failed (attempt {i+1}):")
+                        print(error_details)
+                        
+                        return jsonify({
+                            'error': 'LaTeX compilation failed',
+                            'details': error_details,
+                            'type': 'CompilationError'
+                        }), 500
 
-        # Return PDF as base64
-        pdf_base64 = base64.b64encode(response.content).decode('utf-8')
-        return jsonify({'pdf': pdf_base64})
+                # Read the generated PDF
+                pdf_file = Path(temp_dir) / "document.pdf"
+                if not pdf_file.exists():
+                    return jsonify({
+                        'error': 'PDF generation failed',
+                        'details': 'PDF file was not created',
+                        'type': 'CompilationError'
+                    }), 500
 
+                # Return PDF directly
+                pdf_content = pdf_file.read_bytes()
+                response = Response(pdf_content, mimetype='application/pdf')
+                response = add_cors_headers(response)
+                return response
+
+            except Exception as e:
+                error_info = capture_full_error()
+                return jsonify({
+                    'error': 'LaTeX compilation error',
+                    'details': str(e),
+                    'traceback': error_info['traceback'],
+                    'type': 'CompilationError'
+                }), 500
+
+    except json.JSONDecodeError as e:
+        return jsonify({
+            'error': 'Invalid JSON data',
+            'details': str(e),
+            'type': 'JSONDecodeError'
+        }), 400
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        error_info = capture_full_error()
+        return jsonify({
+            'error': 'Unexpected error',
+            'details': str(e),
+            'type': error_info['error_type'],
+            'traceback': error_info['traceback']
+        }), 500
 
 def scrape_jobs(request):
     """

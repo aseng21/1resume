@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 
-// Define types for the message structure
 type Role = 'system' | 'user' | 'assistant';
 
 interface Message {
@@ -8,75 +7,146 @@ interface Message {
   content: string;
 }
 
-// Create the OpenAI client instance
 const client = new OpenAI({
   baseURL: 'https://api.sambanova.ai/v1',
   apiKey: process.env.SAMBANOVA_API_KEY || '',
   dangerouslyAllowBrowser: true, // Added to allow browser usage
 });
 
+const SWE_ANALYSIS_PROMPT = `You are an expert resume analyst and career advisor specializing in software engineering positions. Analyze the provided resume and job description to optimize the resume content. Return your response in this exact format:
+
+{
+  "basics": {
+    "name": "Full Name",
+    "email": "email@example.com",
+    "phone": "+1 (555) 555-5555",
+    "location": "City, State",
+    "website": "https://example.com",
+    "profiles": [{"url": "https://github.com/username"}]
+  },
+  "education": [
+    {
+      "institution": "University Name",
+      "area": "Field of Study",
+      "studyType": "Degree Type",
+      "startDate": "YYYY-MM-DD",
+      "endDate": "YYYY-MM-DD",
+      "score": "GPA if available",
+      "location": "City, State"
+    }
+  ],
+  "work": [
+    {
+      "company": "Company Name",
+      "position": "Job Title",
+      "location": "City, State",
+      "startDate": "YYYY-MM-DD",
+      "endDate": "YYYY-MM-DD",
+      "highlights": [
+        "Achievement 1",
+        "Achievement 2"
+      ]
+    }
+  ],
+  "skills": [
+    {
+      "name": "Category (e.g., Languages)",
+      "keywords": ["Skill 1", "Skill 2"]
+    }
+  ],
+  "projects": [
+    {
+      "name": "Project Name",
+      "description": "Brief description",
+      "highlights": [
+        "Key achievement 1",
+        "Key achievement 2"
+      ],
+      "keywords": ["Tech 1", "Tech 2"],
+      "url": "https://github.com/username/project"
+    }
+  ],
+  "awards": [
+    {
+      "title": "Award Name",
+      "date": "YYYY-MM-DD",
+      "awarder": "Organization",
+      "summary": "Brief description"
+    }
+  ],
+  "volunteer": [
+    {
+      "organization": "Organization Name",
+      "position": "Role",
+      "startDate": "YYYY-MM-DD",
+      "endDate": "YYYY-MM-DD",
+      "summary": "Brief description",
+      "highlights": ["Achievement 1"]
+    }
+  ]
+}
+
+Important:
+1. Return ONLY valid JSON, no markdown or other text
+2. Use YYYY-MM-DD for all dates
+3. Only include sections that have content
+4. Format all URLs as complete URLs (e.g., https://github.com/...)`;
+
+const gapAnalysisSystemPrompt = `You are an expert resume analyst specializing in identifying gaps between resumes and job requirements. Analyze the provided resume and job listing, then return your analysis in this exact format:
+
+{
+  "eligibilityRequirements": [
+    {
+      "requirement": "Requirement name",
+      "status": "met" | "partial" | "missing",
+      "details": "Detailed explanation of how the requirement is or isn't met"
+    }
+  ],
+  "otherGaps": [
+    {
+      "area": "Gap area (e.g., Location, Experience)",
+      "description": "Detailed description of the gap"
+    }
+  ],
+  "recommendations": [
+    {
+      "priority": "high" | "medium" | "low",
+      "action": "Specific action to address gaps",
+      "details": "Detailed explanation of how to implement the recommendation"
+    }
+  ],
+  "matchScore": {
+    "overall": 0-100,
+    "breakdown": {
+      "technicalSkills": 0-100,
+      "experience": 0-100,
+      "education": 0-100,
+      "requirements": 0-100
+    }
+  }
+}
+
+Important:
+1. Return ONLY valid JSON, no markdown or other text
+2. Be specific and actionable in recommendations
+3. Provide detailed explanations for each gap and recommendation`;
+
+const defaultSystemPrompt = SWE_ANALYSIS_PROMPT;
+
 export async function getSambaNovaResponse(
   prompt: string, 
-  systemPrompt?: string, 
+  systemPrompt?: string,
   additionalContext?: { 
     jobListing?: string, 
     resumeContent?: string 
   }
 ) {
-  // Validate prompt
+  // validate prompt
   if (!prompt || prompt.trim().length === 0) {
     throw new Error('Prompt cannot be empty');
   }
 
-  // LaTeX Resume Template
-  const latexResumeTemplate = `\\documentclass[11pt,a4paper]{moderncv}
-\\moderncvstyle{classic}
-\\moderncvcolor{blue}
-
-\\usepackage[utf8]{inputenc}
-\\usepackage[scale=0.75]{geometry}
-
-\\firstname{[FIRST_NAME]}
-\\lastname{[LAST_NAME]}
-\\email{[EMAIL]}
-\\phone{[PHONE]}
-
-\\begin{document}
-\\makecvtitle
-
-\\section{Professional Summary}
-[PROFESSIONAL_SUMMARY]
-
-\\section{Work Experience}
-[WORK_EXPERIENCE]
-
-\\section{Education}
-[EDUCATION]
-
-\\section{Skills}
-[SKILLS]
-\\end{document}`;
-
-  // Default system prompt for resume optimization
-  const defaultSystemPrompt = `You are a professional Resume Analysis Expert and LaTeX Resume Formatter. Your primary objectives are:
-1. Carefully analyze the provided job listing
-2. Thoroughly review the candidate's resume
-3. Strategically modify the resume to align perfectly with the job requirements
-4. Highlight and emphasize skills, experiences, and education most relevant to the specific job
-5. Prepare a structured LaTeX resume template that presents the candidate as an ideal match for the position
-
-Specific Instructions:
-- Match keywords from the job listing
-- Restructure experience sections to showcase most relevant achievements
-- Tailor language to reflect the job's specific needs
-- Remove or de-emphasize irrelevant information
-- Create a targeted, compelling resume that increases interview chances
-- Format the resume using the provided LaTeX template, filling in placeholders with optimized content`;
-
-  // Alternative system prompt for identifying resume gaps
-  const gapAnalysisSystemPrompt = `Analyze the resume and job listing to identify skill and experience gaps. Provide a detailed breakdown of areas where the candidate's current resume falls short of the job requirements.`;
-
-  // Combine context if available
+  // combine context if available
   let fullPrompt = prompt;
   if (additionalContext) {
     const contextParts = [];
@@ -86,7 +156,6 @@ Specific Instructions:
     if (additionalContext.resumeContent) {
       contextParts.push(`Current Resume Content:\n${additionalContext.resumeContent}`);
     }
-    contextParts.push(`LaTeX Resume Template:\n${latexResumeTemplate}`);
     contextParts.push(`User Prompt:\n${prompt}`);
     
     fullPrompt = contextParts.join('\n\n');
@@ -95,30 +164,28 @@ Specific Instructions:
   const messages: Message[] = [
     { 
       role: 'system', 
-      content: systemPrompt || defaultSystemPrompt
+      content: systemPrompt || SWE_ANALYSIS_PROMPT
     },
     { role: 'user', content: fullPrompt }
   ];
 
   try {
-    // Check API key
-    if (!process.env.SAMBANOVA_API_KEY) {
-      throw new Error('SambaNova API key is not configured');
-    }
-
-    const completion = await client.chat.completions.create({
-      model: 'Meta-Llama-3.1-70B-Instruct',
+    const response = await client.chat.completions.create({
       messages,
+      model: 'Meta-Llama-3.1-70B-Instruct',
       stream: false,
     });
 
-    const responseContent = completion.choices[0].message?.content;
+    const responseContent = response.choices[0].message?.content;
 
     if (!responseContent) {
       throw new Error('Received empty response from SambaNova API');
     }
 
-    return responseContent;
+    return {
+      response: responseContent,
+      raw: response
+    };
   } catch (error) {
     console.error('Detailed SambaNova Error:', {
       message: error instanceof Error ? error.message : 'Unknown error',

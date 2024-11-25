@@ -1,67 +1,43 @@
 'use client';
 
-import { useState, useContext } from 'react';
-import { Button } from "@/components/ui/button";
+import { useState, useRef, useContext } from 'react';
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { useRef, useEffect } from 'react';
+import { toast } from 'react-toastify';
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
-import { ResumeTemplateType, getSystemPromptByType } from '@/lib/systemPrompts';
+
+// query types for different analysis modes
+type QueryType = 'analyze-gaps' | 'optimize-resume';
+
+const gapAnalysisSystemPrompt = 'gap-analysis';
+const SWE_ANALYSIS_PROMPT = 'optimize';
 
 export default function SambaNovaDebug() {
+  const [customPrompt, setCustomPrompt] = useState('');
   const [response, setResponse] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [customPrompt, setCustomPrompt] = useState('');
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-    // Dynamic textarea resizing
-    useEffect(() => {
-      const textarea = textareaRef.current;
-      if (textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = `${textarea.scrollHeight}px`;
-      }
-    }, [customPrompt]);
+  const [queryType, setQueryType] = useState<QueryType>('analyze-gaps');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { parsedPDFContent } = useContext(ParsedPDFContext);
 
-  const [queryType, setQueryType] = useState<'optimize' | 'analyze-gaps' | ResumeTemplateType>('optimize');
-
-  const handleQuery = async (type: 'optimize' | 'analyze-gaps' | ResumeTemplateType) => {
+  // analyze gaps in resume compared to job description
+  const handleGapAnalysis = async () => {
     if (!parsedPDFContent?.rawText) {
       setResponse('No PDF content available');
       return;
     }
 
     setIsLoading(true);
-    setQueryType(type);
-    
-    // Reset response when starting a new query
     setResponse('');
 
-    // Check if the type is a resume template type
-    const isTemplateType = Object.values(ResumeTemplateType).includes(type as ResumeTemplateType);
     try {
-      let prompt = 'Optimize resume for job application';
-      let systemPrompt;
-
-      if (isTemplateType) {
-        const templatePrompt = getSystemPromptByType(type as ResumeTemplateType);
-        prompt = 'Generate a professional LaTeX resume using the specified template';
-        systemPrompt = templatePrompt.systemPrompt;
-      } else {
-        systemPrompt = type === 'analyze-gaps' 
-          ? 'Identify skill and experience gaps' 
-          : undefined;
-      }
-
       const response = await fetch('/api/sambanova', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          prompt: prompt,
-          systemPrompt: systemPrompt,
+          prompt: 'Analyze resume gaps against job description',
+          systemPrompt: gapAnalysisSystemPrompt,
           additionalContext: {
             jobListing: customPrompt || '',
             resumeContent: parsedPDFContent.rawText
@@ -69,21 +45,89 @@ export default function SambaNovaDebug() {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        const errorMessage = data.details 
-          ? `Error: ${data.error}\nDetails: ${JSON.stringify(data.details, null, 2)}` 
-          : data.error || 'Unknown error occurred';
-        
-        setResponse(errorMessage);
-        throw new Error(errorMessage);
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to analyze resume');
       }
 
-      setResponse(data.response);
+      const data = await response.json();
+      
+      // try to parse and format the JSON response
+      try {
+        const parsedResponse = JSON.parse(data.response);
+        setResponse(JSON.stringify(parsedResponse, null, 2));
+      } catch {
+        setResponse(data.response);
+      }
+      
+      toast.success('Gap analysis completed', {
+        toastId: 'gap-analysis-success',
+        containerId: 'main-toast'
+      });
     } catch (error) {
-      console.error('Error in SambaNova query:', error);
-      setResponse(error instanceof Error ? error.message : 'Error querying SambaNova');
+      console.error('Error in gap analysis:', error);
+      setResponse(error instanceof Error ? error.message : 'Error analyzing gaps');
+      
+      toast.error('Failed to analyze gaps', {
+        toastId: 'gap-analysis-error',
+        containerId: 'main-toast'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // optimize resume for job description
+  const handleOptimize = async () => {
+    if (!parsedPDFContent?.rawText) {
+      setResponse('No PDF content available');
+      return;
+    }
+
+    setIsLoading(true);
+    setResponse('');
+
+    try {
+      const response = await fetch('/api/sambanova', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prompt: 'Optimize resume for job description',
+          systemPrompt: SWE_ANALYSIS_PROMPT,
+          additionalContext: {
+            jobListing: customPrompt || '',
+            resumeContent: parsedPDFContent.rawText
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to optimize resume');
+      }
+
+      const data = await response.json();
+      
+      // try to parse and format the JSON response
+      try {
+        const parsedResponse = JSON.parse(data.response);
+        setResponse(JSON.stringify(parsedResponse, null, 2));
+      } catch {
+        setResponse(data.response);
+      }
+      
+      toast.success('Resume optimization completed', {
+        toastId: 'optimize-success',
+        containerId: 'main-toast'
+      });
+    } catch (error) {
+      console.error('Error in resume optimization:', error);
+      setResponse(error instanceof Error ? error.message : 'Error optimizing resume');
+      
+      toast.error('Failed to optimize resume', {
+        toastId: 'optimize-error',
+        containerId: 'main-toast'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -94,53 +138,39 @@ export default function SambaNovaDebug() {
       <h2 className="text-lg font-semibold text-gray-900 mb-4">SambaNova Debug</h2>
       <Textarea 
         ref={textareaRef}
-        placeholder="Job Listing (Optional: Provide context for resume optimization)"
+        placeholder="Enter job description or custom prompt..."
         value={customPrompt}
         onChange={(e) => setCustomPrompt(e.target.value)}
-        className="mb-4 border-gray-200 focus:ring-emerald-500 w-full resize-none overflow-hidden min-h-[100px]"
+        className="min-h-[100px] mb-4"
       />
-      <div className="grid grid-cols-3 gap-2 mb-4">
+      <div className="flex flex-col space-y-2">
         <Button 
-          onClick={() => handleQuery('optimize')} 
-          disabled={isLoading || !parsedPDFContent}
-          className={`w-full ${queryType === 'optimize' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500 hover:bg-emerald-600'} text-white`}
-        >
-          {isLoading && queryType === 'optimize' ? 'Optimizing...' : 'Optimize Resume'}
-        </Button>
-        <Button 
-          onClick={() => handleQuery('analyze-gaps')} 
+          onClick={() => {
+            setQueryType('analyze-gaps');
+            handleGapAnalysis();
+          }}
           disabled={isLoading || !parsedPDFContent}
           className={`w-full ${queryType === 'analyze-gaps' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-amber-500 hover:bg-amber-600'} text-white`}
         >
           {isLoading && queryType === 'analyze-gaps' ? 'Analyzing Gaps...' : 'Analyze Resume Gaps'}
         </Button>
-        {Object.values(ResumeTemplateType).map((templateType) => {
-          const colorMap = {
-            [ResumeTemplateType.CLASSIC]: 'bg-blue-500 hover:bg-blue-600',
-            [ResumeTemplateType.MODERN]: 'bg-purple-500 hover:bg-purple-600',
-            [ResumeTemplateType.ACADEMIC]: 'bg-red-500 hover:bg-red-600',
-            [ResumeTemplateType.CREATIVE]: 'bg-teal-500 hover:bg-teal-600',
-            [ResumeTemplateType.EXECUTIVE]: 'bg-indigo-500 hover:bg-indigo-600'
-          };
-
-          return (
-            <Button 
-              key={templateType}
-              onClick={() => handleQuery(templateType)} 
-              disabled={isLoading || !parsedPDFContent}
-              className={`w-full ${colorMap[templateType]} text-white`}
-            >
-              {isLoading && queryType === templateType 
-                ? `Generating ${templateType} LaTeX...` 
-                : `${templateType.charAt(0).toUpperCase() + templateType.slice(1)} Resume`}
-            </Button>
-          );
-        })}
+        <Button 
+          onClick={() => {
+            setQueryType('optimize-resume');
+            handleOptimize();
+          }}
+          disabled={isLoading || !parsedPDFContent}
+          className={`w-full ${queryType === 'optimize-resume' ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-emerald-500 hover:bg-emerald-600'} text-white`}
+        >
+          {isLoading && queryType === 'optimize-resume' ? 'Optimizing...' : 'Optimize Resume'}
+        </Button>
       </div>
       {response && (
-        <div className="mt-4 p-4 bg-gray-50 rounded">
-          <h3 className="font-semibold mb-2">Response:</h3>
-          <p className="whitespace-pre-wrap">{response}</p>
+        <div className="mt-4">
+          <h3 className="text-md font-semibold text-gray-900 mb-2">Response:</h3>
+          <pre className="bg-gray-50 p-4 rounded-md overflow-x-auto whitespace-pre-wrap text-sm">
+            {response}
+          </pre>
         </div>
       )}
     </Card>

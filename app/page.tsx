@@ -19,6 +19,7 @@ import ResumeTemplates from '@/components/ResumeTemplates';
 import { ParsedPDFContext } from '@/lib/ParsedPDFContext';
 import cn from 'classnames';
 import Image from 'next/image';
+import SambaNovaDebug from '@/components/SambaNovaDebug';
 
 export default function Home() {
   const [currentPDF, setCurrentPDF] = useState<{ url: string; name: string } | null>(null);
@@ -391,6 +392,9 @@ export default function Home() {
                 </div>
               </div>
             </div>
+            {setParsedPDFContent && (
+              <SambaNovaDebug />
+            )}
           </div>
         )}
       </main>

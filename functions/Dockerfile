@@ -1,20 +1,30 @@
 FROM python:3.11-slim
 
-# Install system dependencies
+# Install system dependencies and LaTeX packages
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     texlive-latex-base \
     texlive-fonts-recommended \
     texlive-latex-extra \
     texlive-fonts-extra \
-    texlive-xetex \
-    texlive-lang-english \
+    texlive-latex-recommended \
     texlive-plain-generic \
     lmodern \
+    texlive-font-utils \
+    fonts-font-awesome \
+    fonts-lato \
+    fonts-noto-core \
+    fonts-liberation \
+    fonts-dejavu \
     wget \
+    unzip \
     gnupg \
     ca-certificates \
+    fontconfig \
     && rm -rf /var/lib/apt/lists/*
+
+# Update font cache
+RUN fc-cache -f -v
 
 # Install Chrome dependencies
 RUN apt-get update && apt-get install -y \
@@ -46,7 +56,7 @@ WORKDIR /app
 
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Playwright browsers
 RUN python -m playwright install chromium

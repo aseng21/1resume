@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 609.41">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #4ad962;
+        font-family: SFProDisplay-Bold, 'SF Pro Display';
+        font-size: 450px;
+        font-weight: 700;
+      }
+
+      .cls-2 {
+        letter-spacing: 0em;
+      }
+
+      .cls-3 {
+        letter-spacing: 0em;
+      }
+    </style>
+  </defs>
+  <g id="Layer_1-2" data-name="Layer 1">
+    <text class="cls-1" transform="translate(20.01 383.53)"><tspan class="cls-2" x="0" y="0">1</tspan><tspan class="cls-3" x="214.89" y="0">R</tspan><tspan x="500.76" y="0">esume</tspan></text>
+  </g>
+</svg>
