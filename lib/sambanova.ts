@@ -13,80 +13,66 @@ const client = new OpenAI({
   dangerouslyAllowBrowser: true, // Added to allow browser usage
 });
 
-const SWE_ANALYSIS_PROMPT = `You are a resume optimization API endpoint. You MUST return a valid JSON object and NOTHING else - no explanations, no markdown, no text. Your response will be parsed as JSON.
+const SWE_ANALYSIS_PROMPT = `You are a resume optimization API endpoint. You MUST return a valid JSON object and NOTHING else - no explanations, no markdown, no text. Your response will be parsed as JSON and used directly in a LaTeX template.
 
-The JSON response MUST follow this EXACT structure (this is the only valid format):
+The JSON response MUST contain ALL of these required fields in EXACTLY this format:
 
 {
-  "basics": {
-    "name": "Full Name",
+  "contact_info": {  // REQUIRED: All contact fields
+    "name": "Full Name",  // REQUIRED: The person's full name
+    "location": "City, State",  // REQUIRED: Current location
     "email": "email@example.com",
-    "phone": "+1 (555) 555-5555",
-    "location": "City, State",
-    "website": "https://example.com",
-    "profiles": [{"url": "https://github.com/username"}]
+    "phone": "(XXX) XXX-XXXX",  // Format: (XXX) XXX-XXXX
+    "website": "portfolio.com",  // Format: domain only, no https://
+    "github": "username",        // Format: username only, no https://github.com/
+    "linkedin": "username"       // Format: username only, no https://linkedin.com/in/
   },
-  "education": [
+  "education": {  // REQUIRED: All education fields
+    "degree": "Bachelor of Science in Computer Science",
+    "university": "University Name",
+    "graduation_date": "Month YYYY"
+  },
+  "experience": [  // REQUIRED: At least one experience entry
     {
-      "institution": "University Name",
-      "area": "Field of Study",
-      "studyType": "Degree Type",
-      "startDate": "YYYY-MM-DD",
-      "endDate": "YYYY-MM-DD",
-      "score": "GPA if available",
-      "location": "City, State"
-    }
-  ],
-  "work": [
-    {
+      "title": "Software Engineer",
       "company": "Company Name",
-      "position": "Job Title",
-      "location": "City, State",
-      "startDate": "YYYY-MM-DD",
-      "endDate": "YYYY-MM-DD",
-      "highlights": [
-        "Achievement 1",
-        "Achievement 2"
+      "location": "City, Country",
+      "dates": "Month YYYY - Month YYYY",
+      "achievements": [
+        "Achievement 1 with quantifiable metrics",
+        "Achievement 2 with quantifiable metrics"
       ]
     }
   ],
-  "skills": [
-    {
-      "name": "Category (e.g., Languages)",
-      "keywords": ["Skill 1", "Skill 2"]
-    }
+  "skills": {  // REQUIRED: All skills categories with at least one item
+    "languages": ["Python", "JavaScript", "Java"],     // Programming languages
+    "frameworks": ["React", "Node.js", "Django"],      // Libraries and frameworks
+    "tools": ["Git", "Docker", "AWS"]                 // Development tools and platforms
+  },
+  "certifications": [  // Optional: List of certifications
+    "Certification name with date (YYYY)"
   ],
-  "projects": [
+  "projects": [  // REQUIRED: At least one project
     {
-      "name": "Project Name",
-      "description": "Brief description",
-      "highlights": [
-        "Key achievement 1",
-        "Key achievement 2"
-      ],
-      "keywords": ["Tech 1", "Tech 2"],
-      "url": "https://github.com/username/project"
-    }
-  ],
-  "awards": [
-    {
-      "title": "Award Name",
-      "date": "YYYY-MM-DD",
-      "awarder": "Organization",
-      "summary": "Brief description"
-    }
-  ],
-  "volunteer": [
-    {
-      "organization": "Organization Name",
-      "position": "Role",
-      "startDate": "YYYY-MM-DD",
-      "endDate": "YYYY-MM-DD",
-      "summary": "Brief description",
-      "highlights": ["Achievement 1"]
+      "title": "Project Name",
+      "github": "Brief description of technologies used",  // Used as tech stack description
+      "description": "One line description with quantifiable impact"
     }
   ]
-}`;
+}
+
+IMPORTANT RULES:
+1. Return ONLY the resume data in the EXACT format shown above
+2. ALL fields marked as REQUIRED must be present and non-empty
+3. Format dates consistently as "Month YYYY" (e.g., "September 2023")
+4. Keep achievements and descriptions concise and quantifiable
+5. Do NOT include any fields not shown in the template above
+6. Do NOT include any text outside the JSON object
+7. Format contact info exactly as shown (no https://, proper phone format)
+8. Ensure all required arrays have at least one item
+9. Use proper capitalization for names, titles, and organizations
+10. Keep descriptions under 100 characters
+11. Include metrics and numbers in achievements where possible`;
 
 const gapAnalysisSystemPrompt = `You are a resume gap analysis API endpoint. You MUST return a valid JSON object and NOTHING else - no explanations, no markdown, no text. Your response will be parsed as JSON.
 
@@ -132,7 +118,8 @@ export async function getSambaNovaResponse(
   additionalContext?: { 
     jobListing?: string, 
     resumeContent?: string 
-  }
+  },
+  temperature?: number
 ) {
   // validate prompt
   if (!prompt || prompt.trim().length === 0) {
@@ -174,7 +161,7 @@ export async function getSambaNovaResponse(
       messages,
       model: 'Meta-Llama-3.1-70B-Instruct',
       stream: false,
-      temperature: 0.2,
+      temperature: temperature || 0.2,
       response_format: { type: "json_object" }
     });
 
@@ -223,4 +210,9 @@ export async function getSambaNovaResponse(
     });
     throw error;
   }
+}
+
+export async function callSambaNova(prompt: string, temperature: number = 0.2) {
+  const response = await getSambaNovaResponse(prompt, undefined, undefined, temperature);
+  return response;
 }
