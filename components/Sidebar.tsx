@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut, Settings, ChevronLeft } from "lucide-react";
+import { Trash2, FileText, Plus, Menu, LogIn, UserPlus, LogOut, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { listStoredPDFs, extractOriginalFilename } from '@/lib/pdfStorage';
 import { cn } from "@/lib/utils";
 import { auth } from '@/lib/firebase';
@@ -14,14 +14,16 @@ interface SidebarProps {
   onDelete: (file: string) => void;
   currentFile: string | null;
   onUploadClick: () => void;
+  onSidebarToggle?: (isOpen: boolean) => void;
 }
 
-export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadClick }: SidebarProps) {
+export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadClick, onSidebarToggle }: SidebarProps) {
   const [storedFiles, setStoredFiles] = useState<string[]>([]);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
+  const [isDesktopSidebarOpen, setIsDesktopSidebarOpen] = useState(true);
 
   useEffect(() => {
     loadStoredFiles();
@@ -33,6 +35,10 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
     });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    onSidebarToggle?.(isDesktopSidebarOpen);
+  }, [isDesktopSidebarOpen, onSidebarToggle]);
 
   const loadStoredFiles = async () => {
     try {
@@ -81,13 +87,47 @@ export default function Sidebar({ onFileSelect, onDelete, currentFile, onUploadC
         <h1 className="text-lg font-semibold">1Resume</h1>
       </div>
 
+      {/* Toggle button for desktop */}
+      <button
+        onClick={() => setIsDesktopSidebarOpen(!isDesktopSidebarOpen)}
+        className={cn(
+          "fixed top-[14px] z-50 hidden md:flex items-center justify-center",
+          "h-6 w-6 rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.1)]",
+          "hover:shadow-[0_2px_5px_rgba(0,0,0,0.15)] transition-all duration-200",
+          isDesktopSidebarOpen ? "left-[266px]" : "left-0",
+          isDesktopSidebarOpen ? "-translate-x-1/2" : "translate-x-1/2"
+        )}
+      >
+        <svg
+          className="w-4 h-4 text-gray-600"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          {isDesktopSidebarOpen ? (
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M18.5 12h-13m7-7l-7 7 7 7"
+            />
+          ) : (
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M5.5 12h13m-7-7l7 7-7 7"
+            />
+          )}
+        </svg>
+      </button>
+
       {/* Sidebar */}
       <div className={cn(
-        "fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out md:translate-x-0",
+        "fixed inset-y-0 left-0 z-40 w-72 bg-white border-r border-gray-200 transform transition-transform duration-200 ease-in-out",
         isMobileSidebarOpen ? "translate-x-0" : "-translate-x-full",
-        "flex flex-col h-full",
-        "md:top-0",
-        !isMobileSidebarOpen && "md:block"
+        "md:translate-x-0",
+        !isDesktopSidebarOpen && "md:-translate-x-full",
+        "flex flex-col h-full"
       )}>
         {/* Header */}
         <div className="flex flex-col h-full">

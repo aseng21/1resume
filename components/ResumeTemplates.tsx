@@ -33,7 +33,7 @@ export default function ResumeTemplates() {
         )}
       </div>
       
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-2 gap-8">
         {templates.map((template) => (
           <div key={template.id} className="relative" style={{ perspective: '1000px' }}>
             <div
@@ -49,13 +49,14 @@ export default function ResumeTemplates() {
                   src={template.path}
                   alt={template.name}
                   fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
+                  className="object-contain"
+                  sizes="(max-width: 768px) 50vw, 40vw"
+                  priority
                 />
               </div>
-              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/50 to-transparent p-4">
+              <div className="absolute bottom-0 inset-x-0 bg-black/70 p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-white font-medium text-sm">
+                  <span className="text-white font-semibold text-base">
                     {template.name}
                   </span>
                   <span className={`w-5 h-5 ${selectedTemplate === template.id ? 'text-emerald-400' : 'opacity-0'}`}>

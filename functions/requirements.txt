@@ -1,6 +1,11 @@
-scrapegraphai
-openai
-playwright
+firebase-admin==6.6.0
+flask
+flask-cors
+scrapegraphai==1.31.1
+playwright>=1.43.0
+requests
 python-dotenv
-firebase-functions
-firebase-admin
+beautifulsoup4==4.12.3
+pylatex==1.4.2
+latexcodec==2.0.1
+openai
