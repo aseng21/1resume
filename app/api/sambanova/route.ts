@@ -13,22 +13,37 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+      console.log('Processing request:', {
+        prompt,
+        systemPrompt: systemPrompt || 'default',
+        hasContext: !!additionalContext
+      });
+
       const response = await getSambaNovaResponse(
         prompt,
         systemPrompt,
         additionalContext
       );
 
+      console.log('Successfully processed request');
       return NextResponse.json(response);
     } catch (error) {
-      console.error('SambaNova API Error:', error);
+      console.error('SambaNova API Error:', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace'
+      });
+
       return NextResponse.json({ 
         error: 'Failed to get response from SambaNova',
         details: error instanceof Error ? error.message : 'Unknown error'
       }, { status: 500 });
     }
   } catch (error) {
-    console.error('Request processing error:', error);
+    console.error('Request processing error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : 'No stack trace'
+    });
+
     return NextResponse.json({ 
       error: 'Failed to process request',
       details: error instanceof Error ? error.message : 'Unknown error'

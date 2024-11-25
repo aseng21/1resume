@@ -13,7 +13,9 @@ const client = new OpenAI({
   dangerouslyAllowBrowser: true, // Added to allow browser usage
 });
 
-const SWE_ANALYSIS_PROMPT = `You are an expert resume analyst and career advisor specializing in software engineering positions. Analyze the provided resume and job description to optimize the resume content. Return your response in this exact format:
+const SWE_ANALYSIS_PROMPT = `You are a resume optimization API endpoint. You MUST return a valid JSON object and NOTHING else - no explanations, no markdown, no text. Your response will be parsed as JSON.
+
+The JSON response MUST follow this EXACT structure (this is the only valid format):
 
 {
   "basics": {
@@ -84,52 +86,43 @@ const SWE_ANALYSIS_PROMPT = `You are an expert resume analyst and career advisor
       "highlights": ["Achievement 1"]
     }
   ]
-}
+}`;
 
-Important:
-1. Return ONLY valid JSON, no markdown or other text
-2. Use YYYY-MM-DD for all dates
-3. Only include sections that have content
-4. Format all URLs as complete URLs (e.g., https://github.com/...)`;
+const gapAnalysisSystemPrompt = `You are a resume gap analysis API endpoint. You MUST return a valid JSON object and NOTHING else - no explanations, no markdown, no text. Your response will be parsed as JSON.
 
-const gapAnalysisSystemPrompt = `You are an expert resume analyst specializing in identifying gaps between resumes and job requirements. Analyze the provided resume and job listing, then return your analysis in this exact format:
+The JSON response MUST follow this EXACT structure (this is the only valid format):
 
 {
   "eligibilityRequirements": [
     {
       "requirement": "Requirement name",
-      "status": "met" | "partial" | "missing",
-      "details": "Detailed explanation of how the requirement is or isn't met"
+      "status": "met",
+      "details": "Detailed explanation"
     }
   ],
   "otherGaps": [
     {
-      "area": "Gap area (e.g., Location, Experience)",
-      "description": "Detailed description of the gap"
+      "area": "Gap area",
+      "description": "Detailed description"
     }
   ],
   "recommendations": [
     {
-      "priority": "high" | "medium" | "low",
-      "action": "Specific action to address gaps",
-      "details": "Detailed explanation of how to implement the recommendation"
+      "priority": "high",
+      "action": "Specific action",
+      "details": "Implementation details"
     }
   ],
   "matchScore": {
-    "overall": 0-100,
+    "overall": 85,
     "breakdown": {
-      "technicalSkills": 0-100,
-      "experience": 0-100,
-      "education": 0-100,
-      "requirements": 0-100
+      "technicalSkills": 90,
+      "experience": 80,
+      "education": 85,
+      "requirements": 85
     }
   }
-}
-
-Important:
-1. Return ONLY valid JSON, no markdown or other text
-2. Be specific and actionable in recommendations
-3. Provide detailed explanations for each gap and recommendation`;
+}`;
 
 const defaultSystemPrompt = SWE_ANALYSIS_PROMPT;
 
@@ -151,12 +144,12 @@ export async function getSambaNovaResponse(
   if (additionalContext) {
     const contextParts = [];
     if (additionalContext.jobListing) {
-      contextParts.push(`Job Listing:\n${additionalContext.jobListing}`);
+      contextParts.push(`Job Description:\n${additionalContext.jobListing}`);
     }
     if (additionalContext.resumeContent) {
-      contextParts.push(`Current Resume Content:\n${additionalContext.resumeContent}`);
+      contextParts.push(`Resume Content:\n${additionalContext.resumeContent}`);
     }
-    contextParts.push(`User Prompt:\n${prompt}`);
+    contextParts.push(`Remember: You MUST return ONLY a valid JSON object matching the specified structure. No other text or explanations.\n\nUser Request:\n${prompt}`);
     
     fullPrompt = contextParts.join('\n\n');
   }
@@ -164,28 +157,63 @@ export async function getSambaNovaResponse(
   const messages: Message[] = [
     { 
       role: 'system', 
-      content: systemPrompt || SWE_ANALYSIS_PROMPT
+      content: `${systemPrompt || SWE_ANALYSIS_PROMPT}\n\nIMPORTANT: You must return ONLY a JSON object. No other text, no markdown, no explanations.`
     },
     { role: 'user', content: fullPrompt }
   ];
 
   try {
+    console.log('Sending request to SambaNova with:', {
+      prompt,
+      systemPrompt: systemPrompt || 'default',
+      hasJobListing: !!additionalContext?.jobListing,
+      hasResumeContent: !!additionalContext?.resumeContent
+    });
+
     const response = await client.chat.completions.create({
       messages,
       model: 'Meta-Llama-3.1-70B-Instruct',
       stream: false,
+      temperature: 0.2,
+      response_format: { type: "json_object" }
+    });
+
+    console.log('Received response from SambaNova:', {
+      status: 'success',
+      hasContent: !!response.choices[0].message?.content,
+      contentPreview: response.choices[0].message?.content?.substring(0, 100)
     });
 
     const responseContent = response.choices[0].message?.content;
 
     if (!responseContent) {
+      console.error('Empty response from SambaNova');
       throw new Error('Received empty response from SambaNova API');
     }
 
-    return {
-      response: responseContent,
-      raw: response
-    };
+    // try to clean the response if it has markdown or text
+    let cleanedContent = responseContent;
+    if (responseContent.includes('```json')) {
+      cleanedContent = responseContent.split('```json')[1].split('```')[0].trim();
+    } else if (responseContent.includes('```')) {
+      cleanedContent = responseContent.split('```')[1].split('```')[0].trim();
+    }
+
+    // validate JSON response
+    try {
+      const parsedResponse = JSON.parse(cleanedContent);
+      console.log('Successfully parsed response as JSON');
+      return {
+        response: JSON.stringify(parsedResponse),
+        raw: response
+      };
+    } catch (parseError) {
+      console.error('Failed to parse response as JSON:', {
+        error: parseError instanceof Error ? parseError.message : 'Unknown parse error',
+        content: cleanedContent
+      });
+      throw new Error('API response was not valid JSON');
+    }
   } catch (error) {
     console.error('Detailed SambaNova Error:', {
       message: error instanceof Error ? error.message : 'Unknown error',
