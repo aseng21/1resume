@@ -25,7 +25,17 @@
 
 ## 🛠️ Getting Started
 
-1. Clone the repository:
+1. please create an .env file in the root directory and add the following:
+SAMBANOVA_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyACUBsilyAzlYvVhD8RlwNWuWkwR20x8mY
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=resume-1b055.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=resume-1b055
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=resume-1b055.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=490809062275
+NEXT_PUBLIC_FIREBASE_APP_ID=1:490809062275:web:a9fc76985f4c5334107cb6
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=G-61ZP92MT19
+
+1.1 Clone the repository:
 ```bash
 git clone https://github.com/aseng21/1resume.git
 ```
