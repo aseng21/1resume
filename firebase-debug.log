@@ -1,0 +1,83 @@
+[debug] [2024-11-22T23:09:47.030Z] ----------------------------------------------------------------------
+[debug] [2024-11-22T23:09:47.044Z] Command:       C:\Program Files\nodejs\node.exe C:\Users\Rob\AppData\Roaming\npm\node_modules\firebase-tools\lib\bin\firebase.js init functions
+[debug] [2024-11-22T23:09:47.046Z] CLI Version:   13.25.0
+[debug] [2024-11-22T23:09:47.047Z] Platform:      win32
+[debug] [2024-11-22T23:09:47.047Z] Node Version:  v22.11.0
+[debug] [2024-11-22T23:09:47.049Z] Time:          Sat Nov 23 2024 10:09:47 GMT+1100 (Australian Eastern Daylight Time)
+[debug] [2024-11-22T23:09:47.049Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2024-11-22T23:09:47.084Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-11-22T23:09:47.086Z] > authorizing via signed-in user (robert.bui404@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  C:\Users\Rob\apps\1resume
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] but for now we'll just set up a default project.
+[info] 
+[debug] [2024-11-22T23:09:52.126Z] Checked if tokens are valid: false, expires at: 1731970590635
+[debug] [2024-11-22T23:09:52.127Z] Checked if tokens are valid: false, expires at: 1731970590635
+[debug] [2024-11-22T23:09:52.128Z] > refreshing access token with scopes: []
+[debug] [2024-11-22T23:09:52.142Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2024-11-22T23:09:52.143Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-11-22T23:09:52.862Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2024-11-22T23:09:52.863Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2024-11-22T23:09:53.042Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=100
+[debug] [2024-11-22T23:09:54.101Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 200
+[debug] [2024-11-22T23:09:54.102Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[info] i  Using project resume-1b055 (1Resume) 
+[info] 
+=== Functions Setup
+[debug] [2024-11-22T23:09:58.131Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2024-11-22T23:09:58.132Z] > authorizing via signed-in user (robert.bui404@gmail.com)
+[debug] [2024-11-22T23:09:58.133Z] [iam] checking project resume-1b055 for permissions ["firebase.projects.get"]
+[debug] [2024-11-22T23:09:58.135Z] Checked if tokens are valid: true, expires at: 1732320591863
+[debug] [2024-11-22T23:09:58.135Z] Checked if tokens are valid: true, expires at: 1732320591863
+[debug] [2024-11-22T23:09:58.136Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/resume-1b055:testIamPermissions [none]
+[debug] [2024-11-22T23:09:58.136Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/resume-1b055:testIamPermissions x-goog-quota-user=projects/resume-1b055
+[debug] [2024-11-22T23:09:58.137Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/resume-1b055:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2024-11-22T23:09:58.604Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/resume-1b055:testIamPermissions 200
+[debug] [2024-11-22T23:09:58.604Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/resume-1b055:testIamPermissions {"permissions":["firebase.projects.get"]}
+[debug] [2024-11-22T23:09:58.607Z] Checked if tokens are valid: true, expires at: 1732320591863
+[debug] [2024-11-22T23:09:58.608Z] Checked if tokens are valid: true, expires at: 1732320591863
+[debug] [2024-11-22T23:09:58.608Z] Checked if tokens are valid: true, expires at: 1732320591863
+[debug] [2024-11-22T23:09:58.609Z] Checked if tokens are valid: true, expires at: 1732320591863
+[debug] [2024-11-22T23:09:58.609Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/cloudfunctions.googleapis.com [none]
+[debug] [2024-11-22T23:09:58.609Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/cloudfunctions.googleapis.com x-goog-quota-user=projects/resume-1b055
+[debug] [2024-11-22T23:09:58.614Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/runtimeconfig.googleapis.com [none]
+[debug] [2024-11-22T23:09:58.615Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/runtimeconfig.googleapis.com x-goog-quota-user=projects/resume-1b055
+[debug] [2024-11-22T23:10:00.454Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/cloudfunctions.googleapis.com 200
+[debug] [2024-11-22T23:10:00.455Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/cloudfunctions.googleapis.com [omitted]
+[debug] [2024-11-22T23:10:00.509Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/runtimeconfig.googleapis.com 200
+[debug] [2024-11-22T23:10:00.509Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects/resume-1b055/services/runtimeconfig.googleapis.com [omitted]
+[info] Let's create a new codebase for your functions.
+[info] A directory corresponding to the codebase will be created in your project
+[info] with sample code pre-configured.
+
+[info] See https://firebase.google.com/docs/functions/organize-functions for
+[info] more information on organizing your functions using codebases.
+
+[info] Functions can be deployed with firebase deploy.
+
+[info] +  Wrote functions/requirements.txt 
+[info] +  Wrote functions/.gitignore 
+[info] +  Wrote functions/main.py 
+[debug] [2024-11-22T23:11:46.631Z] Running command with virtualenv: command="C:\Users\Rob\apps\1resume\functions\venv\Scripts\activate.bat", args=["","&&","pip3","install","--upgrade","pip"]
+[debug] [2024-11-22T23:12:11.190Z] Error: spawn "C:\Users\Rob\apps\1resume\functions\venv\Scripts\activate.bat" ENOENT
+    at notFoundError (C:\Users\Rob\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\cross-spawn\lib\enoent.js:6:26)
+    at verifyENOENT (C:\Users\Rob\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\cross-spawn\lib\enoent.js:40:16)
+    at cp.emit (C:\Users\Rob\AppData\Roaming\npm\node_modules\firebase-tools\node_modules\cross-spawn\lib\enoent.js:27:25)
+    at ChildProcess._handle.onexit (node:internal/child_process:293:12)
+[error] 
+[error] Error: An unexpected error has occurred.
