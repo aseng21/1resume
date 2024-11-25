@@ -19,8 +19,16 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "1resume - PDF Resume Interaction",
+  title: "1resume",
   description: "Introducing 1Resume—your AI powered tool that turns your master resume into tailored job-specific applications at the click of a button. Simplify your applications. Secure your success.",
+  icons: {
+    icon: [
+      {
+        url: '/favicon.webp',
+        type: 'image/webp',
+      }
+    ]
+  }
 };
 
 export default function RootLayout({
